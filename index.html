@@ -9,73 +9,14 @@
 
 <style>
 
-body{
-font-family:Arial;
-text-align:center;
-margin:0;
-padding:20px;
-font-size:26px;
-display:flex;
-justify-content:center;
-}
-
-.container{
-max-width:600px;
-width:100%;
-}
-
-.hidden{
-display:none;
-}
-
-button{
-padding:18px 24px;
-margin:8px;
-font-size:26px;
-cursor:pointer;
-border-radius:12px;
-}
-
-input{
-padding:18px;
-width:100%;
-font-size:28px;
-text-align:center;
-border-radius:10px;
-box-sizing:border-box;
-}
-
-.numbers{
-font-size:36px;
-margin:25px;
-}
+/* คอม */
 
 .symbols{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:8px;
 margin-top:20px;
-}
-
-.symbols button{
-width:100%;
 }
 
 .numberPad{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:8px;
 margin-top:20px;
-}
-
-.numberPad button{
-width:100%;
-}
-
-#backBtn{
-position:absolute;
-top:20px;
-right:20px;
 }
 
 /* มือถือ */
@@ -101,21 +42,27 @@ margin:4px;
 }
 
 .symbols{
+display:grid;
 grid-template-columns:repeat(4,1fr);
 gap:6px;
+margin-top:20px;
 }
 
 .symbols button{
+width:100%;
 font-size:22px;
 padding:12px;
 }
 
 .numberPad{
+display:grid;
 grid-template-columns:repeat(3,1fr);
 gap:6px;
+margin-top:20px;
 }
 
 .numberPad button{
+width:100%;
 font-size:22px;
 padding:14px;
 }
