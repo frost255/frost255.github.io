@@ -9,7 +9,46 @@
 
 <style>
 
-/* คอม */
+body{
+font-family:Arial;
+text-align:center;
+margin:0;
+padding:20px;
+font-size:26px;
+display:flex;
+justify-content:center;
+}
+
+.container{
+max-width:600px;
+width:100%;
+}
+
+.hidden{
+display:none;
+}
+
+button{
+padding:18px 24px;
+margin:8px;
+font-size:26px;
+cursor:pointer;
+border-radius:12px;
+}
+
+input{
+padding:18px;
+width:100%;
+font-size:28px;
+text-align:center;
+border-radius:10px;
+box-sizing:border-box;
+}
+
+.numbers{
+font-size:36px;
+margin:25px;
+}
 
 .symbols{
 margin-top:20px;
@@ -17,6 +56,12 @@ margin-top:20px;
 
 .numberPad{
 margin-top:20px;
+}
+
+#backBtn{
+position:absolute;
+top:20px;
+right:20px;
 }
 
 /* มือถือ */
@@ -24,67 +69,45 @@ margin-top:20px;
 @media (max-width:600px){
 
 body{
-padding:12px;
-}
-
-h1{
-font-size:32px;
-}
-
-h2{
-font-size:26px;
+padding:15px;
 }
 
 button{
 font-size:20px;
 padding:12px 16px;
-margin:4px;
-}
-
-.symbols{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:6px;
-margin-top:20px;
+margin:5px;
 }
 
 .symbols button{
-width:100%;
+width:28%;
 font-size:22px;
 padding:12px;
 }
 
-.numberPad{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:6px;
-margin-top:20px;
-}
-
 .numberPad button{
-width:100%;
-font-size:22px;
+width:28%;
+font-size:24px;
 padding:14px;
 }
 
 input{
 font-size:24px;
-padding:14px;
+padding:16px;
 }
 
 .numbers{
-font-size:28px;
-margin:18px;
+font-size:30px;
 }
 
 #backBtn{
-top:10px;
-right:10px;
 font-size:16px;
 padding:8px 12px;
+top:10px;
+right:10px;
 }
 
 }
+
 
 </style>
 </head>
