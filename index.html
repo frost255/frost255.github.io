@@ -114,7 +114,7 @@ padding:6px 10px;
 
 <div class="container">
 
-<h1>⚡ Speed Math Game</h1>
+<h1 id="title">⚡ Speed Math Game</h1>
 
 <div id="menu">
 <h2>Select Mode</h2>
@@ -187,6 +187,10 @@ function startGame(count,minTarget,maxTarget){
 
 document.getElementById("menu").classList.add("hidden")
 document.getElementById("game").classList.remove("hidden")
+
+if(window.innerWidth<=600){
+document.getElementById("title").style.display="none"
+}
 
 numbers=[]
 
@@ -414,6 +418,10 @@ score=0
 
 document.getElementById("game").classList.add("hidden")
 document.getElementById("menu").classList.remove("hidden")
+
+if(window.innerWidth<=600){
+document.getElementById("title").style.display="block"
+}
 
 }
 
