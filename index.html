@@ -9,106 +9,146 @@
 
 <style>
 
-body{
-font-family:Arial;
-text-align:center;
-margin:0;
-padding:20px;
-font-size:26px;
-display:flex;
-justify-content:center;
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    font-size: 24px;
+    background-color: #f7fafc; /* เปลี่ยนพื้นหลังเป็นสีเทาอมฟ้าอ่อนๆ */
+    color: #2d3748; /* สีตัวอักษรเข้มแบบนุ่มนวล */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
 
-.container{
-max-width:600px;
-width:100%;
-position: relative; 
+.container {
+    max-width: 500px;
+    width: 100%;
+    position: relative;
+    background: #ffffff; /* กล่องเกมสีขาวสะอาด */
+    padding: 30px;
+    border-radius: 24px; /* ขอบมนโค้งสไตล์แอปโมเดิร์น */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); /* เงาบางๆ นุ่มๆ */
+    box-sizing: border-box;
 }
 
-.hidden{
-display:none;
+.hidden {
+    display: none;
 }
 
-button{
-padding:18px 24px;
-margin:8px;
-font-size:26px;
-cursor:pointer;
-border-radius:12px;
+/* สไตล์ปุ่มกดทั่วไป */
+button {
+    padding: 12px 20px;
+    margin: 6px;
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 14px;
+    border: none;
+    background-color: #edf2f7;
+    color: #4a5568;
+    transition: all 0.2s ease; /* เอฟเฟกต์ตอนกด/ชี้ */
 }
 
-input{
-padding:18px;
-width:100%;
-font-size:28px;
-text-align:center;
-border-radius:10px;
-box-sizing:border-box;
+button:hover {
+    background-color: #e2e8f0;
+    transform: translateY(-2px); /* ปุ่มลอยขึ้นเล็กน้อยตอนชี้ */
 }
 
-.numbers{
-font-size:36px;
-margin:25px;
+button:active {
+    transform: translateY(0);
 }
 
-.symbols{
-margin-top:20px;
+/* ช่องแสดงคำตอบ */
+input {
+    padding: 16px;
+    width: 100%;
+    font-size: 26px;
+    text-align: center;
+    border-radius: 16px;
+    border: 2px solid #e2e8f0;
+    background-color: #f8fafc;
+    color: #2d3748;
+    box-sizing: border-box;
+    font-weight: bold;
+    letter-spacing: 2px;
 }
 
-.numberPad{
-margin-top:20px;
+/* ส่วนแสดงตัวเลขและเป้าหมาย */
+.numbers {
+    font-size: 32px;
+    margin: 20px 0;
+    font-weight: bold;
+}
+#nums { color: #3182ce; } /* เลขคำถามสีฟ้า */
+#target { color: #e53e3e; font-size: 40px; } /* เลขเป้าหมายสีแดงเด่นๆ */
+
+/* แยกสไตล์ปุ่มเครื่องหมาย */
+.symbols button {
+    background-color: #feebc8; /* สีส้มพาสเทล */
+    color: #c05621;
+    width: 22%;
+}
+.symbols button:hover { background-color: #fbd38d; }
+
+/* แยกสไตล์ปุ่มตัวเลข */
+.numberPad button {
+    background-color: #ebf8ff; /* สีฟ้าพาสเทล */
+    color: #2b6cb0;
+    width: 22%;
+}
+.numberPad button:hover { background-color: #bee3f8; }
+
+/* ปุ่มลบตัวเลข */
+.numberPad button:last-child {
+    background-color: #fed7d7; /* สีแดงพาสเทล */
+    color: #9b2c2c;
+}
+.numberPad button:last-child:hover { background-color: #feb2b2; }
+
+/* ปุ่ม Submit ส่งคำตอบ */
+button[onclick="submitAnswer()"] {
+    width: 100%;
+    margin: 20px 0 0 0;
+    background-color: #48bb78; /* สีเขียว */
+    color: white;
+    padding: 16px;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+button[onclick="submitAnswer()"]:hover {
+    background-color: #38a169;
 }
 
-#backBtn{
-position:absolute;
-top:20px;
-left:20px;
-} 
-
-/* มือถือ */
-@media (max-width:600px){
-
-body{
-padding:15px;
+/* ปุ่ม Back */
+#backBtn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    font-size: 16px;
+    padding: 8px 14px;
+    background: transparent;
+    color: #a0aec0;
+}
+#backBtn:hover {
+    color: #4a5568;
+    background: #edf2f7;
 }
 
-button{
-font-size:18px;
-padding:10px 14px;
-margin:4px;
-}
-
-.symbols button{
-width:28%;
-font-size:20px;
-padding:10px;
-}
-
-.numberPad button{
-width:28%;
-font-size:22px;
-padding:12px;
-}
-
-input{
-font-size:22px;
-padding:14px;
-}
-
-.numbers{
-font-size:28px;
-}
-
-#backBtn{
-left:10px;
-top:20px;
-font-size:15px;
-padding:6px 10px;
-}
-}
-
+/* โหมดมือถือ */
+@media (max-width:600px) {
+    body { padding: 10px; }
+    .container { padding: 20px; border-radius: 16px; }
+    .numbers { font-size: 24px; }
+    #target { font-size: 32px; }
+    input { font-size: 22px; padding: 12px; }
+    button { font-size: 18px; padding: 10px; margin: 4px; }
+    .symbols button, .numberPad button { width: 22%; }
 
 }
+
 
 
 </style>
