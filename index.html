@@ -120,6 +120,31 @@
             font-size: 16px;
         }
 
+        #room-setup-msg {
+            color: #ff5555;
+            min-height: 24px;
+            font-size: 15px;
+            margin-top: 10px;
+        }
+
+        button.btn-danger {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        button.btn-danger:hover {
+            background: #c0392b;
+        }
+
+        button.btn-secondary {
+            background: #555;
+            color: #fff;
+        }
+
+        button.btn-secondary:hover {
+            background: #666;
+        }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -164,11 +189,13 @@
     <!-- หน้า 3: สร้าง/เข้าห้อง -->
     <div id="screen-room-setup" class="screen">
         <h2>🎮 1v1 Matchmaking</h2>
-        <button onclick="createNewRoom()">สร้างห้องใหม่</button>
+        <p id="firebase-status" style="color:#aaa; font-size:14px;">กำลังเชื่อมต่อ Firebase...</p>
+        <button id="create-room-btn" onclick="createNewRoom()">สร้างห้องใหม่</button>
         <p style="color:#aaa;">— หรือ —</p>
         <input type="text" id="room-code-input" maxlength="4" placeholder="รหัส 4 หลัก">
-        <button onclick="joinRoom()">เข้าห้อง</button>
-        <br><br>
+        <button id="join-room-btn" onclick="joinRoom()">เข้าห้อง</button>
+        <p id="room-setup-msg"></p>
+        <br>
         <button onclick="changeScreen('screen-player-type')">⬅ Back</button>
     </div>
 
@@ -185,6 +212,8 @@
     <div id="screen-countdown" class="screen">
         <h2>เตรียมตัว!</h2>
         <div id="countdown-number">3</div>
+        <br>
+        <button class="btn-danger" onclick="surrender()">🏳️ ยอมแพ้</button>
     </div>
 
     <!-- หน้า 6: เล่นเกม -->
@@ -200,6 +229,7 @@
 
         <br>
         <button id="submit-btn" onclick="submitAnswer()">ส่งคำตอบ (Submit)</button>
+        <button class="btn-danger" onclick="surrender()">🏳️ ยอมแพ้ / กลับเมนู</button>
         <p id="game-msg"></p>
 
         <div class="score-board">
@@ -220,15 +250,63 @@
         const firebaseConfig = {
             apiKey: "AIzaSyCHC4XKZPnMFT_6meVFb4NDO3bk-tZxUIs",
             authDomain: "frost255.firebaseapp.com",
-            databaseURL: "https://frost255-default-rtdb.firebaseio.com",
+            databaseURL: "https://frost255-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "frost255",
             storageBucket: "frost255.firebasestorage.app",
             messagingSenderId: "669751261090",
             appId: "1:669751261090:web:d1d13219a7aba6bedee4fb"
         };
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        let db = null;
+        let firebaseReady = false;
+
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            db.ref('.info/connected').on('value', snap => {
+                firebaseReady = snap.val() === true;
+                updateFirebaseStatus();
+            });
+        } catch (e) {
+            console.error(e);
+            firebaseReady = false;
+            updateFirebaseStatus('ไม่สามารถเริ่ม Firebase: ' + e.message);
+        }
+
+        function updateFirebaseStatus(forcedMsg) {
+            const el = document.getElementById('firebase-status');
+            if (!el) return;
+            if (forcedMsg) {
+                el.textContent = '❌ ' + forcedMsg;
+                el.style.color = '#ff5555';
+                return;
+            }
+            if (firebaseReady) {
+                el.textContent = '✅ เชื่อมต่อ Firebase แล้ว';
+                el.style.color = '#2ecc71';
+            } else {
+                el.textContent = '⏳ กำลังเชื่อมต่อ Firebase... (ถ้ารอนาน ให้เช็ค Rules ใน Console)';
+                el.style.color = '#aaa';
+            }
+        }
+
+        function showRoomError(err, action) {
+            console.error(action, err);
+            let msg = 'เกิดข้อผิดพลาด: ' + (err.message || err.code || err);
+
+            if (err.code === 'PERMISSION_DENIED') {
+                msg = 'Firebase ปฏิเสธการเขียน — ไปที่ Firebase Console → Realtime Database → Rules แล้วตั้งให้อ่าน/เขียน rooms ได้';
+            } else if (location.protocol === 'file:') {
+                msg = 'เปิดไฟล์จากเครื่อง (file://) อาจทำให้ Firebase ใช้ไม่ได้ — ลองเปิดผ่าน Live Server หรืออัปโหลดขึ้น Hosting';
+            }
+
+            document.getElementById('room-setup-msg').textContent = '❌ ' + msg;
+        }
+
+        function setRoomButtonsLoading(loading) {
+            document.getElementById('create-room-btn').disabled = loading;
+            document.getElementById('join-room-btn').disabled = loading;
+        }
 
         let currentMode = 'normal';
         let isMultiplayer = false;
@@ -292,52 +370,81 @@
         }
 
         function createNewRoom() {
+            if (!db) return showRoomError({ message: 'Firebase ยังไม่พร้อม' }, 'create');
+
+            setRoomButtonsLoading(true);
+            document.getElementById('room-setup-msg').textContent = 'กำลังสร้างห้อง...';
+
             roomCode = generateRoomCode();
             myRole = 'host';
             isHost = true;
 
-            db.ref('rooms/' + roomCode).set({
-                mode: currentMode,
-                status: 'waiting',
-                hostPresent: true,
-                guestPresent: false,
-                target: 0,
-                numbers: '',
-                hostAnswer: -999,
-                guestAnswer: -999,
-                hostExpr: '',
-                guestExpr: ''
-            }).then(() => {
-                document.getElementById('display-room-code').innerText = roomCode;
-                document.getElementById('lobby-status').innerText = 'กำลังรอผู้เล่นคนที่ 2...';
-                document.getElementById('start-game-btn').style.display = 'none';
-                changeScreen('screen-lobby');
-                listenToRoom();
-            });
+            db.ref('rooms/' + roomCode).once('value')
+                .then(snap => {
+                    if (snap.exists()) {
+                        roomCode = generateRoomCode();
+                    }
+                    return db.ref('rooms/' + roomCode).set({
+                        mode: currentMode,
+                        status: 'waiting',
+                        hostPresent: true,
+                        guestPresent: false,
+                        target: 0,
+                        numbers: '',
+                        hostAnswer: -999,
+                        guestAnswer: -999,
+                        hostExpr: '',
+                        guestExpr: '',
+                        surrenderedBy: ''
+                    });
+                })
+                .then(() => {
+                    document.getElementById('room-setup-msg').textContent = '';
+                    document.getElementById('display-room-code').innerText = roomCode;
+                    document.getElementById('lobby-status').innerText = 'กำลังรอผู้เล่นคนที่ 2...';
+                    document.getElementById('start-game-btn').style.display = 'none';
+                    changeScreen('screen-lobby');
+                    listenToRoom();
+                })
+                .catch(err => showRoomError(err, 'create'))
+                .finally(() => setRoomButtonsLoading(false));
         }
 
         function joinRoom() {
+            if (!db) return showRoomError({ message: 'Firebase ยังไม่พร้อม' }, 'join');
+
             const input = document.getElementById('room-code-input').value.trim();
-            if (input.length !== 4) return alert('กรุณาใส่รหัสห้อง 4 หลัก');
+            if (input.length !== 4) {
+                document.getElementById('room-setup-msg').textContent = '❌ กรุณาใส่รหัสห้อง 4 หลัก';
+                return;
+            }
+
+            setRoomButtonsLoading(true);
+            document.getElementById('room-setup-msg').textContent = 'กำลังเข้าห้อง...';
 
             roomCode = input;
             myRole = 'guest';
             isHost = false;
 
-            db.ref('rooms/' + roomCode).once('value', snap => {
-                if (!snap.exists()) return alert('ไม่พบห้องนี้');
-                const data = snap.val();
-                if (data.status !== 'waiting') return alert('ห้องนี้เริ่มเกมแล้วหรือเต็มแล้ว');
+            db.ref('rooms/' + roomCode).once('value')
+                .then(snap => {
+                    if (!snap.exists()) throw new Error('ไม่พบห้องนี้');
+                    const data = snap.val();
+                    if (data.status !== 'waiting') throw new Error('ห้องนี้เริ่มเกมแล้วหรือเต็มแล้ว');
 
-                currentMode = data.mode;
-                db.ref('rooms/' + roomCode).update({ guestPresent: true, status: 'ready' }).then(() => {
+                    currentMode = data.mode;
+                    return db.ref('rooms/' + roomCode).update({ guestPresent: true, status: 'ready' });
+                })
+                .then(() => {
+                    document.getElementById('room-setup-msg').textContent = '';
                     document.getElementById('display-room-code').innerText = roomCode;
                     document.getElementById('lobby-status').innerText = 'เชื่อมต่อแล้ว! รอเจ้าของห้องเริ่มเกม...';
                     document.getElementById('start-game-btn').style.display = 'none';
                     changeScreen('screen-lobby');
                     listenToRoom();
-                });
-            });
+                })
+                .catch(err => showRoomError(err, 'join'))
+                .finally(() => setRoomButtonsLoading(false));
         }
 
         function listenToRoom() {
@@ -365,6 +472,10 @@
                     const bothDone = data.hostAnswer !== -999 && data.guestAnswer !== -999;
                     if (bothDone) evaluateWinner(data);
                 }
+
+                if (data.status === 'surrendered' && data.surrenderedBy && data.surrenderedBy !== myRole) {
+                    showOpponentSurrender(data.surrenderedBy);
+                }
             });
         }
 
@@ -379,7 +490,8 @@
                 hostAnswer: -999,
                 guestAnswer: -999,
                 hostExpr: '',
-                guestExpr: ''
+                guestExpr: '',
+                surrenderedBy: ''
             });
         }
 
@@ -408,14 +520,61 @@
         }
 
         function leaveRoom() {
-            if (roomCode) {
+            if (roomCode && db) {
                 db.ref('rooms/' + roomCode).off('value');
                 if (myRole === 'host') db.ref('rooms/' + roomCode).remove();
                 else db.ref('rooms/' + roomCode).update({ guestPresent: false, status: 'waiting' });
             }
             roomCode = '';
+            myRole = '';
+            isHost = false;
+            countdownRunning = false;
             clearInterval(gameTimer);
             changeScreen('screen-mode');
+        }
+
+        function surrender() {
+            if (!confirm('ยอมแพ้และกลับหน้าเมนู?')) return;
+
+            clearInterval(gameTimer);
+            answered = true;
+            countdownRunning = false;
+
+            if (isMultiplayer && roomCode && db) {
+                db.ref('rooms/' + roomCode).off('value');
+                const update = {
+                    status: 'surrendered',
+                    surrenderedBy: myRole
+                };
+                if (myRole === 'host') {
+                    update.hostAnswer = -999999;
+                    update.hostExpr = '(ยอมแพ้)';
+                } else {
+                    update.guestAnswer = -999999;
+                    update.guestExpr = '(ยอมแพ้)';
+                }
+                db.ref('rooms/' + roomCode).update(update)
+                    .catch(err => console.error(err))
+                    .finally(() => {
+                        document.getElementById('result-text').innerText = '🏳️ คุณยอมแพ้';
+                        document.getElementById('result-details').innerHTML = 'กลับหน้าเมนูเพื่อเล่นใหม่';
+                        changeScreen('screen-result');
+                        roomCode = '';
+                        myRole = '';
+                        isHost = false;
+                    });
+            } else {
+                changeScreen('screen-mode');
+            }
+        }
+
+        function showOpponentSurrender(who) {
+            db.ref('rooms/' + roomCode).off('value');
+            clearInterval(gameTimer);
+            const label = who === 'host' ? 'เจ้าของห้อง' : 'ผู้เข้าร่วม';
+            document.getElementById('result-text').innerText = '🎉 คุณชนะ! (คู่ต่อสู้ยอมแพ้)';
+            document.getElementById('result-details').innerHTML = label + ' ยอมแพ้กลางเกม';
+            changeScreen('screen-result');
         }
 
         function backToMenu() {
