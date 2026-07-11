@@ -11,28 +11,47 @@
             text-align: center;
             background: #121212;
             color: #ffffff;
+            margin: 0;
             padding: 20px;
+            font-size: 22px;
         }
 
         button {
             background: #ffcc00;
             color: #000;
             border: none;
-            padding: 12px 24px;
+            padding: 12px 20px;
             font-size: 18px;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
-            margin: 10px;
+            margin: 6px;
             transition: 0.2s;
         }
 
         button:hover {
             background: #e6b800;
-            transform: scale(1.05);
         }
 
-        input {
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        input#answer {
+            padding: 14px;
+            font-size: 22px;
+            border-radius: 8px;
+            border: 2px solid #ffcc00;
+            background: #222;
+            color: #fff;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        input#room-code-input {
             padding: 12px;
             font-size: 18px;
             border-radius: 8px;
@@ -46,9 +65,9 @@
         .screen {
             display: none;
             max-width: 600px;
-            margin: 50px auto;
+            margin: 30px auto;
             background: #1e1e1e;
-            padding: 30px;
+            padding: 24px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
@@ -57,21 +76,24 @@
             display: block;
         }
 
-        .number-btn {
+        .numbers {
+            font-size: 32px;
+            margin: 16px 0;
+            color: #ffcc00;
+        }
+
+        .symbols button,
+        .numberPad button {
             background: #333;
             color: #fff;
             border: 2px solid #555;
-            font-size: 24px;
-            width: 60px;
-            height: 60px;
-            border-radius: 10px;
-            margin: 5px;
+            min-width: 52px;
         }
 
-        .number-btn.selected {
-            background: #ffcc00;
-            color: #000;
-            border-color: #ffcc00;
+        .symbols button:hover,
+        .numberPad button:hover {
+            background: #444;
+            transform: none;
         }
 
         #countdown-number {
@@ -83,17 +105,33 @@
         .score-board {
             display: flex;
             justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-top: 20px;
-            font-size: 18px;
+            font-size: 16px;
             background: #2a2a2a;
             padding: 15px;
             border-radius: 8px;
+        }
+
+        #game-msg {
+            color: #ff5555;
+            min-height: 24px;
+            font-size: 16px;
         }
 
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
+        }
+
+        @media (max-width: 600px) {
+            body { font-size: 18px; padding: 12px; }
+            button { font-size: 16px; padding: 10px 14px; margin: 4px; }
+            .symbols button, .numberPad button { width: 28%; font-size: 18px; }
+            input#answer { font-size: 18px; }
+            .numbers { font-size: 26px; }
         }
     </style>
 
@@ -102,79 +140,80 @@
 </head>
 <body>
 
-    <!-- หน้าที่ 1: เลือกโหมดความยาก -->
+    <!-- หน้า 1: เลือกโหมด -->
     <div id="screen-mode" class="screen active">
-        <h2>⚡ Select Mode ⚡</h2>
+        <h1>⚡ Speed Math Game</h1>
+        <h2>เลือกโหมด</h2>
         <button onclick="selectMode('normal')">Normal Mode</button>
         <button onclick="selectMode('advanced')">Advanced Mode</button>
+        <p style="color:#aaa; font-size:14px;">
+            Normal: สุ่ม 4 ตัว | + − × ÷ ^ | 60 วิ<br>
+            Advanced: สุ่ม 5 ตัว | + − × ÷ ^ √ ! | 100 วิ
+        </p>
     </div>
 
-    <!-- หน้าที่ 2: เลือกประเภทผู้เล่น -->
+    <!-- หน้า 2: เลือกเล่นคนเดียว / 1v1 -->
     <div id="screen-player-type" class="screen">
         <h2 id="title-selected-mode"></h2>
         <button onclick="selectPlayerType('single')">เล่นคนเดียว (Single Player)</button>
-        <button onclick="selectPlayerType('1v1')">สู้กันแบบ 1v1 (Multiplayer)</button>
+        <button onclick="selectPlayerType('1v1')">สู้กัน 1v1 (Multiplayer)</button>
         <br>
         <button onclick="changeScreen('screen-mode')">⬅ Back</button>
     </div>
 
-    <!-- หน้าที่ 3: เมนูสร้างหรือเข้าห้อง -->
+    <!-- หน้า 3: สร้าง/เข้าห้อง -->
     <div id="screen-room-setup" class="screen">
         <h2>🎮 1v1 Matchmaking</h2>
-        <button onclick="createNewRoom()">สร้างห้องใหม่ (Create Room)</button>
-        <p style="color: #aaa;">— หรือ —</p>
-        <input type="text" id="room-code-input" maxlength="4" placeholder="รหัสห้อง 4 หลัก">
-        <button onclick="joinRoom()">เข้าห้อง (Join Room)</button>
+        <button onclick="createNewRoom()">สร้างห้องใหม่</button>
+        <p style="color:#aaa;">— หรือ —</p>
+        <input type="text" id="room-code-input" maxlength="4" placeholder="รหัส 4 หลัก">
+        <button onclick="joinRoom()">เข้าห้อง</button>
         <br><br>
         <button onclick="changeScreen('screen-player-type')">⬅ Back</button>
     </div>
 
-    <!-- หน้าที่ 4: ล็อบบี้รอผู้เล่น -->
+    <!-- หน้า 4: ลobby -->
     <div id="screen-lobby" class="screen">
-        <h2>🏠 Room Code: <span id="display-room-code" style="color: #ffcc00; font-size: 32px;">XXXX</span></h2>
-        <p id="lobby-status" style="font-size: 18px; color: #aaa;">กำลังรอผู้เล่นคนที่ 2 เข้าห้อง...</p>
-        <button id="start-game-btn" style="display: none;" onclick="hostTriggerStart()">เริ่มเกมเลย!</button>
+        <h2>🏠 Room: <span id="display-room-code" style="color:#ffcc00;">XXXX</span></h2>
+        <p id="lobby-status" style="color:#aaa;">กำลังรอผู้เล่นคนที่ 2...</p>
+        <button id="start-game-btn" style="display:none;" onclick="hostTriggerStart()">เริ่มเกม!</button>
         <br>
-        <button onclick="leaveRoom()">ออกจากห้อง (Leave)</button>
+        <button onclick="leaveRoom()">ออกจากห้อง</button>
     </div>
 
-    <!-- หน้าที่ 5: หน้าจอนับถอยหลัง 3 วินาที -->
+    <!-- หน้า 5: นับถอยหลัง -->
     <div id="screen-countdown" class="screen">
-        <h2>เตรียมตัวให้พร้อม!</h2>
+        <h2>เตรียมตัว!</h2>
         <div id="countdown-number">3</div>
     </div>
 
-    <!-- หน้าที่ 6: หน้าจอเล่นเกม -->
+    <!-- หน้า 6: เล่นเกม -->
     <div id="screen-game" class="screen">
-        <div style="font-size: 20px; color: #aaa;">Target (เป้าหมาย)</div>
-        <div id="target-display" style="font-size: 64px; color: #ffcc00; font-weight: bold; margin-bottom: 20px;">0</div>
+        <div class="numbers">ตัวเลข: <span id="nums"></span></div>
+        <div class="numbers">เป้าหมาย: <span id="target"></span></div>
+        <p>เวลาเหลือ: <span id="time">60</span> วิ</p>
 
-        <div style="font-size: 18px; margin-bottom: 10px;">ตัวเลขของคุณ (คลิกเพื่อเลือก/ยกเลิก):</div>
-        <div id="numbers-container"></div>
+        <input id="answer" readonly placeholder="สร้างสมการที่ใกล้เป้าหมายที่สุด">
 
-        <div style="margin-top: 20px; font-size: 24px;">
-            ผลรวมปัจจุบันของคุณ: <span id="current-sum-display" style="color: #ffcc00; font-weight: bold;">0</span>
-        </div>
-
-        <div style="font-size: 20px; color: #ff5555; margin-top: 15px;">
-            เวลาที่เหลือ: <span id="timer-display">60</span> วินาที
-        </div>
+        <div class="symbols" id="symbols"></div>
+        <div class="numberPad" id="numberPad"></div>
 
         <br>
         <button id="submit-btn" onclick="submitAnswer()">ส่งคำตอบ (Submit)</button>
+        <p id="game-msg"></p>
 
         <div class="score-board">
-            <div>สถานะของคุณ: <span id="my-status" style="color: #2ecc71;">กำลังคิด...</span></div>
-            <div>สถานะคู่ต่อสู้: <span id="opponent-status" style="color: #e74c3c;">กำลังคิด...</span></div>
+            <div>คุณ: <span id="my-status">⏳ กำลังคิด...</span></div>
+            <div>คู่ต่อสู้: <span id="opponent-status">—</span></div>
         </div>
     </div>
 
-    <!-- หน้าที่ 7: สรุปผลการแข่งขัน -->
+    <!-- หน้า 7: ผลลัพธ์ -->
     <div id="screen-result" class="screen">
-        <h2>🏆 ผลการแข่งขัน 🏆</h2>
-        <h1 id="result-text" style="color: #ffcc00;">ใครชนะ?</h1>
-        <div id="result-details" style="font-size: 18px; line-height: 1.6; margin: 20px 0;"></div>
-        <button onclick="changeScreen('screen-mode')">กลับหน้าหลัก (Main Menu)</button>
+        <h2>🏆 ผลการแข่งขัน</h2>
+        <h1 id="result-text" style="color:#ffcc00;"></h1>
+        <div id="result-details" style="font-size:17px; line-height:1.7; margin:20px 0;"></div>
+        <button onclick="backToMenu()">กลับหน้าหลัก</button>
     </div>
 
     <script>
@@ -188,9 +227,7 @@
             appId: "1:669751261090:web:d1d13219a7aba6bedee4fb"
         };
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         let currentMode = 'normal';
@@ -199,21 +236,23 @@
         let myRole = '';
         let isHost = false;
 
-        let targetNumber = 0;
-        let poolNumbers = [];
-        let selectedIndices = [];
-        let gameTimer = null;
+        let numbers = [];
+        let target = 0;
         let timeLeft = 60;
-        let myFinalAnswer = 0;
+        let gameTimer = null;
+        let answered = false;
+        let myResult = null; // ค่าที่คำนวณได้
+        let countdownRunning = false;
 
-        function changeScreen(screenId) {
+        function changeScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+            document.getElementById(id).classList.add('active');
         }
 
         function selectMode(mode) {
             currentMode = mode;
-            document.getElementById('title-selected-mode').innerText = mode === 'normal' ? '💎 Normal Mode' : '🔥 Advanced Mode';
+            document.getElementById('title-selected-mode').innerText =
+                mode === 'normal' ? '💎 Normal Mode (4 ตัว, 60 วิ)' : '🔥 Advanced Mode (5 ตัว, 100 วิ)';
             changeScreen('screen-player-type');
         }
 
@@ -226,6 +265,27 @@
                 changeScreen('screen-room-setup');
             }
         }
+
+        function getGameSettings() {
+            if (currentMode === 'normal') {
+                return { count: 4, minTarget: 10, maxTarget: 99, time: 60 };
+            }
+            return { count: 5, minTarget: 100, maxTarget: 999, time: 100 };
+        }
+
+        function generateNumbers(count) {
+            const arr = [];
+            for (let i = 0; i < count; i++) {
+                arr.push(Math.floor(Math.random() * 9) + 1);
+            }
+            return arr;
+        }
+
+        function generateTarget(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // ── Firebase Multiplayer ──
 
         function generateRoomCode() {
             return Math.floor(1000 + Math.random() * 9000).toString();
@@ -244,10 +304,12 @@
                 target: 0,
                 numbers: '',
                 hostAnswer: -999,
-                guestAnswer: -999
+                guestAnswer: -999,
+                hostExpr: '',
+                guestExpr: ''
             }).then(() => {
                 document.getElementById('display-room-code').innerText = roomCode;
-                document.getElementById('lobby-status').innerText = "กำลังรอผู้เล่นคนที่ 2 เข้าห้อง...";
+                document.getElementById('lobby-status').innerText = 'กำลังรอผู้เล่นคนที่ 2...';
                 document.getElementById('start-game-btn').style.display = 'none';
                 changeScreen('screen-lobby');
                 listenToRoom();
@@ -256,24 +318,21 @@
 
         function joinRoom() {
             const input = document.getElementById('room-code-input').value.trim();
-            if (input.length !== 4) return alert("กรุณาใส่รหัสห้องให้ครบ 4 หลัก");
+            if (input.length !== 4) return alert('กรุณาใส่รหัสห้อง 4 หลัก');
 
             roomCode = input;
             myRole = 'guest';
             isHost = false;
 
-            db.ref('rooms/' + roomCode).once('value', (snapshot) => {
-                if (!snapshot.exists()) return alert("ไม่พบห้องนี้ในระบบ!");
-                const roomData = snapshot.val();
-                if (roomData.status !== 'waiting') return alert("ห้องนี้เริ่มเกมไปแล้วหรือห้องเต็ม!");
+            db.ref('rooms/' + roomCode).once('value', snap => {
+                if (!snap.exists()) return alert('ไม่พบห้องนี้');
+                const data = snap.val();
+                if (data.status !== 'waiting') return alert('ห้องนี้เริ่มเกมแล้วหรือเต็มแล้ว');
 
-                currentMode = roomData.mode;
-                db.ref('rooms/' + roomCode).update({
-                    guestPresent: true,
-                    status: 'ready'
-                }).then(() => {
+                currentMode = data.mode;
+                db.ref('rooms/' + roomCode).update({ guestPresent: true, status: 'ready' }).then(() => {
                     document.getElementById('display-room-code').innerText = roomCode;
-                    document.getElementById('lobby-status').innerText = "เชื่อมต่อสำเร็จ! รอเจ้าของห้องกดเริ่มเกม...";
+                    document.getElementById('lobby-status').innerText = 'เชื่อมต่อแล้ว! รอเจ้าของห้องเริ่มเกม...';
                     document.getElementById('start-game-btn').style.display = 'none';
                     changeScreen('screen-lobby');
                     listenToRoom();
@@ -282,200 +341,298 @@
         }
 
         function listenToRoom() {
-            db.ref('rooms/' + roomCode).on('value', (snapshot) => {
-                if (!snapshot.exists()) return;
-                const data = snapshot.val();
+            db.ref('rooms/' + roomCode).on('value', snap => {
+                if (!snap.exists()) return;
+                const data = snap.val();
 
                 if (myRole === 'host') {
                     if (data.status === 'ready') {
-                        document.getElementById('lobby-status').innerText = "ผู้เล่นคนที่ 2 มาแล้ว! พร้อมเริ่มเกมได้เลย";
+                        document.getElementById('lobby-status').innerText = 'ผู้เล่นคนที่ 2 พร้อมแล้ว!';
                         document.getElementById('start-game-btn').style.display = 'inline-block';
                     } else if (data.status === 'waiting') {
-                        document.getElementById('lobby-status').innerText = "กำลังรอผู้เล่นคนที่ 2...";
+                        document.getElementById('lobby-status').innerText = 'กำลังรอผู้เล่นคนที่ 2...';
                         document.getElementById('start-game-btn').style.display = 'none';
                     }
                 }
 
-                if (data.status === 'countdown') {
-                    run3SecondCountdown(data.target, data.numbers.split(',').map(Number));
+                if (data.status === 'countdown' && !countdownRunning) {
+                    runCountdown(data.target, data.numbers.split(',').map(Number));
                 }
 
                 if (data.status === 'playing') {
-                    if (myRole === 'host') {
-                        document.getElementById('opponent-status').innerText = data.guestAnswer !== -999 ? "🟢 ส่งคำตอบแล้ว" : "⏳ กำลังคิด...";
-                        if (data.hostAnswer !== -999 && data.guestAnswer !== -999) evaluateWinner(data);
-                    } else {
-                        document.getElementById('opponent-status').innerText = data.hostAnswer !== -999 ? "🟢 ส่งคำตอบแล้ว" : "⏳ กำลังคิด...";
-                        if (data.hostAnswer !== -999 && data.guestAnswer !== -999) evaluateWinner(data);
-                    }
+                    const oppDone = myRole === 'host' ? data.guestAnswer !== -999 : data.hostAnswer !== -999;
+                    document.getElementById('opponent-status').innerText = oppDone ? '🟢 ส่งแล้ว' : '⏳ กำลังคิด...';
+                    const bothDone = data.hostAnswer !== -999 && data.guestAnswer !== -999;
+                    if (bothDone) evaluateWinner(data);
                 }
             });
         }
 
         function hostTriggerStart() {
-            let target = currentMode === 'normal' ? Math.floor(Math.random() * 50) + 10 : Math.floor(Math.random() * 200) + 50;
-            let nums = [];
-            let count = currentMode === 'normal' ? 4 : 6;
-            for (let i = 0; i < count; i++) {
-                nums.push(Math.floor(Math.random() * 12) + 2);
-            }
+            const s = getGameSettings();
+            const nums = generateNumbers(s.count);
+            const tgt = generateTarget(s.minTarget, s.maxTarget);
             db.ref('rooms/' + roomCode).update({
                 status: 'countdown',
-                target: target,
-                numbers: nums.join(',')
+                target: tgt,
+                numbers: nums.join(','),
+                hostAnswer: -999,
+                guestAnswer: -999,
+                hostExpr: '',
+                guestExpr: ''
             });
         }
 
-        function run3SecondCountdown(target, nums) {
+        function runCountdown(tgt, nums) {
+            if (countdownRunning) return;
+            countdownRunning = true;
             db.ref('rooms/' + roomCode).off('value');
-            targetNumber = target;
-            poolNumbers = nums;
+            target = tgt;
+            numbers = nums;
             changeScreen('screen-countdown');
             let count = 3;
             document.getElementById('countdown-number').innerText = count;
-            let timer = setInterval(() => {
+            const cd = setInterval(() => {
                 count--;
                 if (count > 0) {
                     document.getElementById('countdown-number').innerText = count;
                 } else {
-                    clearInterval(timer);
+                    clearInterval(cd);
                     setupGameScreen();
+                    if (isMultiplayer) {
+                        db.ref('rooms/' + roomCode).update({ status: 'playing' });
+                        listenToRoom();
+                    }
                 }
             }, 1000);
         }
 
+        function leaveRoom() {
+            if (roomCode) {
+                db.ref('rooms/' + roomCode).off('value');
+                if (myRole === 'host') db.ref('rooms/' + roomCode).remove();
+                else db.ref('rooms/' + roomCode).update({ guestPresent: false, status: 'waiting' });
+            }
+            roomCode = '';
+            clearInterval(gameTimer);
+            changeScreen('screen-mode');
+        }
+
+        function backToMenu() {
+            if (isMultiplayer && roomCode) leaveRoom();
+            else changeScreen('screen-mode');
+        }
+
+        // ── Game Core (เกมคณิตคิดเร็วเดิม) ──
+
         function startSinglePlayerGame() {
-            targetNumber = currentMode === 'normal' ? Math.floor(Math.random() * 50) + 10 : Math.floor(Math.random() * 200) + 50;
-            poolNumbers = [];
-            let count = currentMode === 'normal' ? 4 : 6;
-            for (let i = 0; i < count; i++) poolNumbers.push(Math.floor(Math.random() * 12) + 2);
+            const s = getGameSettings();
+            numbers = generateNumbers(s.count);
+            target = generateTarget(s.minTarget, s.maxTarget);
             setupGameScreen();
         }
 
         function setupGameScreen() {
-            selectedIndices = [];
-            timeLeft = 60;
-            myFinalAnswer = 0;
-            document.getElementById('target-display').innerText = targetNumber;
-            document.getElementById('timer-display').innerText = timeLeft;
-            document.getElementById('current-sum-display').innerText = 0;
-            document.getElementById('my-status').innerText = "⏳ กำลังคิด...";
-            document.getElementById('opponent-status').innerText = isMultiplayer ? "⏳ กำลังคิด..." : "ปิดใช้งาน";
+            countdownRunning = false;
+            answered = false;
+            myResult = null;
+            const s = getGameSettings();
+            timeLeft = s.time;
+
+            document.getElementById('nums').textContent = numbers.join(', ');
+            document.getElementById('target').textContent = target;
+            document.getElementById('answer').value = '';
+            document.getElementById('game-msg').textContent = '';
+            document.getElementById('time').textContent = timeLeft;
             document.getElementById('submit-btn').disabled = false;
+            document.getElementById('my-status').innerText = '⏳ กำลังคิด...';
+            document.getElementById('opponent-status').innerText = isMultiplayer ? '⏳ กำลังคิด...' : '—';
 
-            const container = document.getElementById('numbers-container');
-            container.innerHTML = '';
-            poolNumbers.forEach((num, index) => {
-                let btn = document.createElement('button');
-                btn.className = 'number-btn';
-                btn.innerText = num;
-                btn.onclick = () => toggleNumber(index, btn);
-                container.appendChild(btn);
-            });
-
+            setupSymbols();
+            setupNumberPad();
             changeScreen('screen-game');
 
-            if (gameTimer) clearInterval(gameTimer);
+            clearInterval(gameTimer);
             gameTimer = setInterval(() => {
                 timeLeft--;
-                document.getElementById('timer-display').innerText = timeLeft;
+                document.getElementById('time').textContent = timeLeft;
                 if (timeLeft <= 0) {
                     clearInterval(gameTimer);
-                    submitAnswer();
+                    submitAnswer(true);
                 }
             }, 1000);
+        }
 
-            if (isMultiplayer) {
-                db.ref('rooms/' + roomCode).update({ status: 'playing' });
-                listenToRoom();
+        function setupSymbols() {
+            const div = document.getElementById('symbols');
+            div.innerHTML = '';
+            const base = ['+', '-', '*', '/', '^', '(', ')'];
+            base.forEach(sym => {
+                div.innerHTML += `<button onclick="addSymbol('${sym}')">${sym}</button>`;
+            });
+            if (currentMode === 'advanced') {
+                div.innerHTML += `<button onclick="addSymbol('!')">!</button>`;
+                div.innerHTML += `<button onclick="addSymbol('√')">√</button>`;
             }
         }
 
-        function toggleNumber(index, btn) {
-            let foundIndex = selectedIndices.indexOf(index);
-            if (foundIndex > -1) {
-                selectedIndices.splice(foundIndex, 1);
-                btn.classList.remove('selected');
-            } else {
-                selectedIndices.push(index);
-                btn.classList.add('selected');
+        function setupNumberPad() {
+            const pad = document.getElementById('numberPad');
+            pad.innerHTML = '';
+            for (let i = 1; i <= 9; i++) {
+                pad.innerHTML += `<button onclick="addSymbol('${i}')">${i}</button>`;
             }
-            let sum = 0;
-            selectedIndices.forEach(idx => sum += poolNumbers[idx]);
-            document.getElementById('current-sum-display').innerText = sum;
-            myFinalAnswer = sum;
+            pad.innerHTML += `<button onclick="deleteOne()">⌫</button>`;
         }
 
-        function submitAnswer() {
+        function addSymbol(sym) {
+            if (answered) return;
+            document.getElementById('answer').value += sym;
+        }
+
+        function deleteOne() {
+            if (answered) return;
+            const box = document.getElementById('answer');
+            box.value = box.value.slice(0, -1);
+        }
+
+        function factorial(n) {
+            if (n < 0 || n > 6) throw new Error('Invalid factorial');
+            let r = 1;
+            for (let i = 2; i <= n; i++) r *= i;
+            return r;
+        }
+
+        function validateNumbers(input) {
+            const used = input.match(/\d+/g);
+            if (!used) return false;
+            const temp = [...numbers];
+            for (const num of used) {
+                const idx = temp.indexOf(parseInt(num, 10));
+                if (idx === -1) return false;
+                temp.splice(idx, 1);
+            }
+            return temp.length === 0;
+        }
+
+        function evaluateExpression(rawInput) {
+            let input = rawInput;
+
+            if (currentMode === 'advanced') {
+                if ((input.match(/!/g) || []).length > 1 || (input.match(/√/g) || []).length > 1) {
+                    throw new Error('ใช้ ! และ √ ได้อย่างละ 1 ครั้ง');
+                }
+                input = input.replace(/√(\d+)/g, 'Math.sqrt($1)');
+                input = input.replace(/(\d+)!/g, 'factorial($1)');
+            }
+
+            input = input.replace(/\^/g, '**');
+            return eval(input);
+        }
+
+        function submitAnswer(timedOut = false) {
+            if (answered) return;
+
+            const rawInput = document.getElementById('answer').value.trim();
+            const msg = document.getElementById('game-msg');
+
+            if (!timedOut && !rawInput) {
+                msg.textContent = '❌ กรุณาสร้างสมการ';
+                return;
+            }
+
+            if (!timedOut && !validateNumbers(rawInput)) {
+                msg.textContent = '❌ ต้องใช้ตัวเลขจากชุดครบทุกตัว และใช้แต่ละตัวครั้งเดียว';
+                return;
+            }
+
+            let value = null;
+            if (rawInput) {
+                try {
+                    value = evaluateExpression(rawInput);
+                } catch (e) {
+                    msg.textContent = timedOut ? '' : ('❌ ' + (e.message || 'สมการไม่ถูกต้อง'));
+                    if (!timedOut) return;
+                }
+            }
+
+            answered = true;
             clearInterval(gameTimer);
             document.getElementById('submit-btn').disabled = true;
-            document.getElementById('my-status').innerText = "🟢 ส่งคำตอบแล้ว";
+            document.getElementById('my-status').innerText = timedOut && value === null ? '⏰ หมดเวลา' : '🟢 ส่งแล้ว';
+            myResult = value;
 
             if (!isMultiplayer) {
-                showSinglePlayerResult();
+                showSingleResult(rawInput, value, timedOut);
             } else {
-                let updateData = {};
-                if (myRole === 'host') updateData.hostAnswer = myFinalAnswer;
-                else updateData.guestAnswer = myFinalAnswer;
-                db.ref('rooms/' + roomCode).update(updateData);
+                const update = {};
+                if (myRole === 'host') {
+                    update.hostAnswer = value === null ? -999999 : value;
+                    update.hostExpr = rawInput;
+                } else {
+                    update.guestAnswer = value === null ? -999999 : value;
+                    update.guestExpr = rawInput;
+                }
+                db.ref('rooms/' + roomCode).update(update);
             }
         }
 
-        function showSinglePlayerResult() {
-            let diff = Math.abs(targetNumber - myFinalAnswer);
-            let title = diff === 0 ? "🎯 สุดยอดมาก! คำตอบตรงเป๊ะ" : "🎉 เก่งมากครับ!";
+        function showSingleResult(expr, value, timedOut) {
+            let title, details;
+
+            if (value === null || timedOut) {
+                title = '⏰ หมดเวลา!';
+                details = `เป้าหมาย: <b>${target}</b><br>ไม่ได้ส่งคำตอบที่ถูกต้อง`;
+            } else {
+                const diff = Math.abs(target - value);
+                title = diff === 0 ? '🎯 PERFECT! ตรงเป้า!' : '🎉 จบรอบ!';
+                details =
+                    `สมการ: <b>${expr}</b><br>` +
+                    `ผลลัพธ์: <b>${value}</b><br>` +
+                    `เป้าหมาย: <b>${target}</b><br>` +
+                    `ห่างจากเป้า: <b>${diff}</b> แต้ม`;
+            }
+
             document.getElementById('result-text').innerText = title;
-            document.getElementById('result-details').innerHTML =
-                `เป้าหมายโจทย์: <b>${targetNumber}</b><br>` +
-                `คำตอบที่คุณทำได้: <b>${myFinalAnswer}</b><br>` +
-                `ห่างจากเป้าหมายอยู่: <b>${diff}</b> แต้ม`;
+            document.getElementById('result-details').innerHTML = details;
             changeScreen('screen-result');
         }
 
-        function evaluateWinner(roomData) {
+        function evaluateWinner(data) {
             db.ref('rooms/' + roomCode).off('value');
-            let hostDiff = Math.abs(roomData.target - roomData.hostAnswer);
-            let guestDiff = Math.abs(roomData.target - roomData.guestAnswer);
-            let title = "";
 
+            const hostVal = data.hostAnswer;
+            const guestVal = data.guestAnswer;
+            const hostDiff = hostVal === -999999 ? Infinity : Math.abs(data.target - hostVal);
+            const guestDiff = guestVal === -999999 ? Infinity : Math.abs(data.target - guestVal);
+
+            let title;
             if (hostDiff < guestDiff) {
-                title = myRole === 'host' ? "👑 คุณชนะ!" : "❌ คุณแพ้!";
+                title = myRole === 'host' ? '👑 คุณชนะ!' : '❌ คุณแพ้';
             } else if (guestDiff < hostDiff) {
-                title = myRole === 'guest' ? "👑 คุณชนะ!" : "❌ คุณแพ้!";
+                title = myRole === 'guest' ? '👑 คุณชนะ!' : '❌ คุณแพ้';
             } else {
-                title = "🤝 ผลการแข่งขัน: เสมอ!";
+                title = '🤝 เสมอ!';
             }
 
             document.getElementById('result-text').innerText = title;
             document.getElementById('result-details').innerHTML =
-                `🎯 เป้าหมายรอบนี้: <b>${roomData.target}</b><br><br>` +
-                `🔵 ผู้สร้างห้องทำได้: <b>${roomData.hostAnswer}</b> (ห่าง ${hostDiff})<br>` +
-                `🔴 ผู้ร่วมห้องทำได้: <b>${roomData.guestAnswer}</b> (ห่าง ${guestDiff})<br><br>` +
-                `<i>*กฎเกม: ใครคำนวณได้แต้มใกล้เป้าหมายที่สุด เป็นฝ่ายชนะ!</i>`;
+                `🎯 เป้าหมาย: <b>${data.target}</b> | ตัวเลข: <b>${data.numbers}</b><br><br>` +
+                `🔵 เจ้าของห้อง: <b>${data.hostExpr || '—'}</b> → ${hostVal === -999999 ? 'ไม่ส่ง' : hostVal} (ห่าง ${hostDiff === Infinity ? '—' : hostDiff})<br>` +
+                `🔴 ผู้เข้าร่วม: <b>${data.guestExpr || '—'}</b> → ${guestVal === -999999 ? 'ไม่ส่ง' : guestVal} (ห่าง ${guestDiff === Infinity ? '—' : guestDiff})<br><br>` +
+                `<i>ใครได้ผลลัพธ์ใกล้เป้าหมายที่สุด ชนะ!</i>`;
+
             changeScreen('screen-result');
 
             if (myRole === 'host') {
                 db.ref('rooms/' + roomCode).update({
                     hostAnswer: -999,
                     guestAnswer: -999,
+                    hostExpr: '',
+                    guestExpr: '',
                     status: 'ready'
                 });
             }
-        }
-
-        function leaveRoom() {
-            if (roomCode) {
-                db.ref('rooms/' + roomCode).off('value');
-                if (myRole === 'host') {
-                    db.ref('rooms/' + roomCode).remove();
-                } else {
-                    db.ref('rooms/' + roomCode).update({
-                        guestPresent: false,
-                        status: 'waiting'
-                    });
-                }
-            }
-            changeScreen('screen-mode');
         }
     </script>
 
