@@ -1,255 +1,187 @@
-< !DOCTYPE html >
-    <
-    html lang = "th" >
-    <
-    head >
-    <
-    meta charset = "UTF-8" >
-    <
-    meta name = "viewport"
-content = "width=device-width, initial-scale=1.0" >
-    <
-    title > Speed Math Game - 1 v1 Mode < /title>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Math Game - 1v1 Mode</title>
 
-    <
-    style >
-    body {
-        font - family: 'Segoe UI', Tahoma, Geneva, Verdana, sans - serif;
-        text - align: center;
-        background: #121212; 
-            color: # ffffff;
-        padding: 20 px;
-    }
-
-button {
-    background: #ffcc00;
-    color: #000; 
-            border: none; 
-            padding: 12px 24px; 
-            font-size: 18px; 
-            font-weight: bold; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            margin: 10px; 
-            transition: 0.2s; 
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background: #121212;
+            color: #ffffff;
+            padding: 20px;
         }
-        
-        button:hover { 
-            background: # e6b800;
-    transform: scale(1.05);
-}
 
-input {
-    padding: 12 px;
-    font - size: 18 px;
-    border - radius: 8 px;
-    border: 2 px solid #ffcc00;
-    background: #222; 
-            color: # fff;
-    text - align: center;
-    width: 150 px;
-}
+        button {
+            background: #ffcc00;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: 0.2s;
+        }
 
-.screen {
-    display: none;
-    max - width: 600 px;
-    margin: 50 px auto;
-    background: #1e1e1e; 
-            padding: 30px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+        button:hover {
+            background: #e6b800;
+            transform: scale(1.05);
         }
-        
-        .active { 
-            display: block; 
-        }
-        
-        .number-btn { 
-            background: # 333;
-    color: #fff;
-    border: 2 px solid #555; 
-            font-size: 24px; 
-            width: 60px; 
-            height: 60px; 
-            border-radius: 10px; 
-            margin: 5px; 
-        }
-        
-        .number-btn.selected { 
-            background: # ffcc00;
-    color: #000; 
-            border-color: # ffcc00;
-}
 
-#countdown - number {
-        font - size: 120 px;
-        color: #ffcc00;
-        animation: pulse 1 s infinite;
-    }
-
-    .score - board {
-        display: flex;
-        justify - content: space - around;
-        margin - top: 20 px;
-        font - size: 18 px;
-        background: #2a2a2a; 
-            padding: 15px; 
-            border-radius: 8px; 
+        input {
+            padding: 12px;
+            font-size: 18px;
+            border-radius: 8px;
+            border: 2px solid #ffcc00;
+            background: #222;
+            color: #fff;
+            text-align: center;
+            width: 150px;
         }
-        
-        @keyframes pulse { 
-            0% { transform: scale(1); } 
-            50% { transform: scale(1.1); } 
-            100% { transform: scale(1); } 
+
+        .screen {
+            display: none;
+            max-width: 600px;
+            margin: 50px auto;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .active {
+            display: block;
+        }
+
+        .number-btn {
+            background: #333;
+            color: #fff;
+            border: 2px solid #555;
+            font-size: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            margin: 5px;
+        }
+
+        .number-btn.selected {
+            background: #ffcc00;
+            color: #000;
+            border-color: #ffcc00;
+        }
+
+        #countdown-number {
+            font-size: 120px;
+            color: #ffcc00;
+            animation: pulse 1s infinite;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            font-size: 18px;
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
     </style>
 
-    <!-- เชื่อมต่อ Firebase SDK แบบแยกทีละบรรทัดชัดเจน -->
-    <script src= "https://gstatic.com" > < /script> <
-            script src = "https://gstatic.com" > < /script> <
-            /head> <
-            body >
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
 
-            <
-            !--หน้ าที่ 1: เลือกโหมดความยาก-- >
-            <
-            div id = "screen-mode"
-        class = "screen active" >
-        <
-        h2 > ⚡Select Mode⚡ < /h2> <
-        button onclick = "selectMode('normal')" > Normal Mode < /button> <
-        button onclick = "selectMode('advanced')" > Advanced Mode < /button> <
-        /div>
+    <!-- หน้าที่ 1: เลือกโหมดความยาก -->
+    <div id="screen-mode" class="screen active">
+        <h2>⚡ Select Mode ⚡</h2>
+        <button onclick="selectMode('normal')">Normal Mode</button>
+        <button onclick="selectMode('advanced')">Advanced Mode</button>
+    </div>
 
-        <
-        !--หน้ าที่ 2: เลือกประเภทผู้ เล่ น-- >
-            <
-            div id = "screen-player-type"
-        class = "screen" >
-        <
-        h2 id = "title-selected-mode" > < /h2> <
-        button onclick = "selectPlayerType('single')" > เล่ นคนเดียว(Single Player) < /button> <
-        button onclick = "selectPlayerType('1v1')" > สู้ กั นแบบ 1 v1(Multiplayer) < /button> <
-        br >
-        <
-        button onclick = "changeScreen('screen-mode')" > ⬅Back < /button> <
-        /div>
+    <!-- หน้าที่ 2: เลือกประเภทผู้เล่น -->
+    <div id="screen-player-type" class="screen">
+        <h2 id="title-selected-mode"></h2>
+        <button onclick="selectPlayerType('single')">เล่นคนเดียว (Single Player)</button>
+        <button onclick="selectPlayerType('1v1')">สู้กันแบบ 1v1 (Multiplayer)</button>
+        <br>
+        <button onclick="changeScreen('screen-mode')">⬅ Back</button>
+    </div>
 
-        <
-        !--หน้ าที่ 3: เมนูสร้ างหรือเข้ าห้ อง-- >
-            <
-            div id = "screen-room-setup"
-        class = "screen" >
-        <
-        h2 > 🎮1 v1 Matchmaking < /h2> <
-        button onclick = "createNewRoom()" > สร้ างห้ องใหม่(Create Room) < /button> <
-        p style = "color: #aaa;" > —หรือ— < /p> <
-        input type = "text"
-        id = "room-code-input"
-        maxlength = "4"
-        placeholder = "รหัสห้อง 4 หลัก" >
-        <
-        button onclick = "joinRoom()" > เข้ าห้ อง(Join Room) < /button> <
-        br >
-        <
-        br >
-        <
-        button onclick = "changeScreen('screen-player-type')" > ⬅Back < /button> <
-        /div>
+    <!-- หน้าที่ 3: เมนูสร้างหรือเข้าห้อง -->
+    <div id="screen-room-setup" class="screen">
+        <h2>🎮 1v1 Matchmaking</h2>
+        <button onclick="createNewRoom()">สร้างห้องใหม่ (Create Room)</button>
+        <p style="color: #aaa;">— หรือ —</p>
+        <input type="text" id="room-code-input" maxlength="4" placeholder="รหัสห้อง 4 หลัก">
+        <button onclick="joinRoom()">เข้าห้อง (Join Room)</button>
+        <br><br>
+        <button onclick="changeScreen('screen-player-type')">⬅ Back</button>
+    </div>
 
-        <
-        !--หน้ าที่ 4: ล็ อบบี้ รอผู้ เล่ น-- >
-            <
-            div id = "screen-lobby"
-        class = "screen" >
-        <
-        h2 > 🏠Room Code: < span id = "display-room-code"
-        style = "color: #ffcc00; font-size: 32px;" > XXXX < /span></h2 >
-        <
-        p id = "lobby-status"
-        style = "font-size: 18px; color: #aaa;" > กำลั งรอผู้ เล่ นคนที่ 2 เข้ าห้ อง... < /p> <
-        button id = "start-game-btn"
-        style = "display: none;"
-        onclick = "hostTriggerStart()" > เริ่ มเกมเลย! < /button> <
-        br >
-        <
-        button onclick = "leaveRoom()" > ออกจากห้ อง(Leave) < /button> <
-        /div>
+    <!-- หน้าที่ 4: ล็อบบี้รอผู้เล่น -->
+    <div id="screen-lobby" class="screen">
+        <h2>🏠 Room Code: <span id="display-room-code" style="color: #ffcc00; font-size: 32px;">XXXX</span></h2>
+        <p id="lobby-status" style="font-size: 18px; color: #aaa;">กำลังรอผู้เล่นคนที่ 2 เข้าห้อง...</p>
+        <button id="start-game-btn" style="display: none;" onclick="hostTriggerStart()">เริ่มเกมเลย!</button>
+        <br>
+        <button onclick="leaveRoom()">ออกจากห้อง (Leave)</button>
+    </div>
 
-        <
-        !--หน้ าที่ 5: หน้ าจอนั บถอยหลั ง 3 วินาที-- >
-            <
-            div id = "screen-countdown"
-        class = "screen" >
-        <
-        h2 > เตรียมตั วให้ พร้ อม! < /h2> <
-        div id = "countdown-number" > 3 < /div> <
-        /div>
+    <!-- หน้าที่ 5: หน้าจอนับถอยหลัง 3 วินาที -->
+    <div id="screen-countdown" class="screen">
+        <h2>เตรียมตัวให้พร้อม!</h2>
+        <div id="countdown-number">3</div>
+    </div>
 
-        <
-        !--หน้ าที่ 6: หน้ าจอเล่ นเกม-- >
-            <
-            div id = "screen-game"
-        class = "screen" >
-        <
-        div style = "font-size: 20px; color: #aaa;" > Target(เป้ าหมาย) < /div> <
-        div id = "target-display"
-        style = "font-size: 64px; color: #ffcc00; font-weight: bold; margin-bottom: 20px;" > 0 < /div>
+    <!-- หน้าที่ 6: หน้าจอเล่นเกม -->
+    <div id="screen-game" class="screen">
+        <div style="font-size: 20px; color: #aaa;">Target (เป้าหมาย)</div>
+        <div id="target-display" style="font-size: 64px; color: #ffcc00; font-weight: bold; margin-bottom: 20px;">0</div>
 
-        <
-        div style = "font-size: 18px; margin-bottom: 10px;" > ตั วเลขของคุณ(คลิกเพื่ อเลือก / ยกเลิก): < /div> <
-            div id = "numbers-container" > < /div>
+        <div style="font-size: 18px; margin-bottom: 10px;">ตัวเลขของคุณ (คลิกเพื่อเลือก/ยกเลิก):</div>
+        <div id="numbers-container"></div>
 
-            <
-            div style = "margin-top: 20px; font-size: 24px;" >
-            ผลรวมปั จจุบั นของคุณ: < span id = "current-sum-display"
-        style = "color: #ffcc00; font-weight: bold;" > 0 < /span> <
-        /div>
+        <div style="margin-top: 20px; font-size: 24px;">
+            ผลรวมปัจจุบันของคุณ: <span id="current-sum-display" style="color: #ffcc00; font-weight: bold;">0</span>
+        </div>
 
-        <
-        div style = "font-size: 20px; color: #ff5555; margin-top: 15px;" >
-        เวลาที่ เหลือ: < span id = "timer-display" > 60 < /span> วินาที <
-            /div>
+        <div style="font-size: 20px; color: #ff5555; margin-top: 15px;">
+            เวลาที่เหลือ: <span id="timer-display">60</span> วินาที
+        </div>
 
-            <
-            br >
-            <
-            button id = "submit-btn"
-        onclick = "submitAnswer()" > ส่ งคำตอบ(Submit) < /button>
+        <br>
+        <button id="submit-btn" onclick="submitAnswer()">ส่งคำตอบ (Submit)</button>
 
-        <
-        div class = "score-board" >
-        <
-        div > สถานะของคุณ: < span id = "my-status"
-        style = "color: #2ecc71;" > กำลั งคิด... < /span></div >
-        <
-        div > สถานะคู่ ต่ อสู้: < span id = "opponent-status"
-        style = "color: #e74c3c;" > กำลั งคิด... < /span></div >
-        <
-        /div> <
-        /div>
+        <div class="score-board">
+            <div>สถานะของคุณ: <span id="my-status" style="color: #2ecc71;">กำลังคิด...</span></div>
+            <div>สถานะคู่ต่อสู้: <span id="opponent-status" style="color: #e74c3c;">กำลังคิด...</span></div>
+        </div>
+    </div>
 
-        <
-        !--หน้ าที่ 7: สรุปผลการแข่ งขั น-- >
-            <
-            div id = "screen-result"
-        class = "screen" >
-        <
-        h2 > 🏆ผลการแข่ งขั น🏆 < /h2> <
-        h1 id = "result-text"
-        style = "color: #ffcc00;" > ใครชนะ ? < /h1> <
-        div id = "result-details"
-        style = "font-size: 18px; line-height: 1.6; margin: 20px 0;" > < /div> <
-        button onclick = "changeScreen('screen-mode')" > กลั บหน้ าหลั ก(Main Menu) < /button> <
-        /div>
+    <!-- หน้าที่ 7: สรุปผลการแข่งขัน -->
+    <div id="screen-result" class="screen">
+        <h2>🏆 ผลการแข่งขัน 🏆</h2>
+        <h1 id="result-text" style="color: #ffcc00;">ใครชนะ?</h1>
+        <div id="result-details" style="font-size: 18px; line-height: 1.6; margin: 20px 0;"></div>
+        <button onclick="changeScreen('screen-mode')">กลับหน้าหลัก (Main Menu)</button>
+    </div>
 
-        <
-        script >
-        // อย่าลืมใส่ค่า Config จากระบบ Firebase ของคุณตรงนี้นะครับ
+    <script>
         const firebaseConfig = {
-           apiKey: "AIzaSyCHC4XKZPnMFT_6meVFb4NDO3bk-tZxUIs",
-            authDomain: "://firebaseapp.com",
-            databaseURL: "https://firebasedatabase.app",
+            apiKey: "AIzaSyCHC4XKZPnMFT_6meVFb4NDO3bk-tZxUIs",
+            authDomain: "frost255.firebaseapp.com",
+            databaseURL: "https://frost255-default-rtdb.firebaseio.com",
             projectId: "frost255",
             storageBucket: "frost255.firebasestorage.app",
             messagingSenderId: "669751261090",
@@ -342,7 +274,7 @@ input {
                 }).then(() => {
                     document.getElementById('display-room-code').innerText = roomCode;
                     document.getElementById('lobby-status').innerText = "เชื่อมต่อสำเร็จ! รอเจ้าของห้องกดเริ่มเกม...";
-                    Use code with caution.document.getElementById('start-game-btn').style.display = 'none';
+                    document.getElementById('start-game-btn').style.display = 'none';
                     changeScreen('screen-lobby');
                     listenToRoom();
                 });
@@ -353,6 +285,7 @@ input {
             db.ref('rooms/' + roomCode).on('value', (snapshot) => {
                 if (!snapshot.exists()) return;
                 const data = snapshot.val();
+
                 if (myRole === 'host') {
                     if (data.status === 'ready') {
                         document.getElementById('lobby-status').innerText = "ผู้เล่นคนที่ 2 มาแล้ว! พร้อมเริ่มเกมได้เลย";
@@ -362,9 +295,11 @@ input {
                         document.getElementById('start-game-btn').style.display = 'none';
                     }
                 }
+
                 if (data.status === 'countdown') {
                     run3SecondCountdown(data.target, data.numbers.split(',').map(Number));
                 }
+
                 if (data.status === 'playing') {
                     if (myRole === 'host') {
                         document.getElementById('opponent-status').innerText = data.guestAnswer !== -999 ? "🟢 ส่งคำตอบแล้ว" : "⏳ กำลังคิด...";
@@ -427,6 +362,7 @@ input {
             document.getElementById('my-status').innerText = "⏳ กำลังคิด...";
             document.getElementById('opponent-status').innerText = isMultiplayer ? "⏳ กำลังคิด..." : "ปิดใช้งาน";
             document.getElementById('submit-btn').disabled = false;
+
             const container = document.getElementById('numbers-container');
             container.innerHTML = '';
             poolNumbers.forEach((num, index) => {
@@ -436,7 +372,9 @@ input {
                 btn.onclick = () => toggleNumber(index, btn);
                 container.appendChild(btn);
             });
+
             changeScreen('screen-game');
+
             if (gameTimer) clearInterval(gameTimer);
             gameTimer = setInterval(() => {
                 timeLeft--;
@@ -446,10 +384,9 @@ input {
                     submitAnswer();
                 }
             }, 1000);
+
             if (isMultiplayer) {
-                db.ref('rooms/' + roomCode).update({
-                    status: 'playing'
-                });
+                db.ref('rooms/' + roomCode).update({ status: 'playing' });
                 listenToRoom();
             }
         }
@@ -473,6 +410,7 @@ input {
             clearInterval(gameTimer);
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('my-status').innerText = "🟢 ส่งคำตอบแล้ว";
+
             if (!isMultiplayer) {
                 showSinglePlayerResult();
             } else {
@@ -487,25 +425,59 @@ input {
             let diff = Math.abs(targetNumber - myFinalAnswer);
             let title = diff === 0 ? "🎯 สุดยอดมาก! คำตอบตรงเป๊ะ" : "🎉 เก่งมากครับ!";
             document.getElementById('result-text').innerText = title;
-            document.getElementById('result-details').innerHTML = เป้ าหมายโจทย์: < b > $ {
-                targetNumber
-            } < /b><br> คำตอบที่คุณทำได้: <b>${myFinalAnswer}</b > < br > ห่ างจากเป้ าหมายอยู่: < b > $ {
-                diff
-            } < /b> แต้ม;changeScreen('screen-result');}function evaluateWinner(roomData) {db.ref('rooms/
-            ' + roomCode).off('
-            value ');let hostDiff = Math.abs(roomData.target - roomData.hostAnswer);let guestDiff = Math.abs(roomData.target - roomData.guestAnswer);let title = "";if (hostDiff < guestDiff) {title = myRole === '
-            host ' ? "👑 คุณชนะ!" : "❌ คุณแพ้!";} else if (guestDiff < hostDiff) {title = myRole === '
-            guest ' ? "👑 คุณชนะ!" : "❌ คุณแพ้!";} else {title = "🤝 ผลการแข่งขัน: เสมอ!";}document.getElementById('
-            result - text ').innerText = title;document.getElementById('
-            result - details ').innerHTML = 🎯 เป้าหมายรอบนี้: <b>${roomData.target}</b><br><br> 🔵 ผู้สร้างห้องทำได้: <b>${roomData.hostAnswer}</b> (ห่าง ${hostDiff})<br> 🔴 ผู้ร่วมห้องทำได้: <b>${roomData.guestAnswer}</b> (ห่าง ${guestDiff})<br><br> <i>*กฎเกม: ใครคำนวณได้แต้มใกล้เป้าหมายที่สุด เป็นฝ่ายชนะ!</i>;changeScreen('
-            screen - result ');if (myRole === '
-            host ') {db.ref('
-            rooms / ' + roomCode).update({ hostAnswer: -999, guestAnswer: -999, status: '
-            ready ' });}}function leaveRoom() {if (roomCode) {db.ref('
-            rooms / ' + roomCode).off('
-            value ');if (myRole === '
-            host ') db.ref('
-            rooms / ' + roomCode).remove();else db.ref('
-            rooms / ' + roomCode).update({ guestPresent: false, status: '
-            waiting ' });}changeScreen('
-            screen - mode ');}
+            document.getElementById('result-details').innerHTML =
+                `เป้าหมายโจทย์: <b>${targetNumber}</b><br>` +
+                `คำตอบที่คุณทำได้: <b>${myFinalAnswer}</b><br>` +
+                `ห่างจากเป้าหมายอยู่: <b>${diff}</b> แต้ม`;
+            changeScreen('screen-result');
+        }
+
+        function evaluateWinner(roomData) {
+            db.ref('rooms/' + roomCode).off('value');
+            let hostDiff = Math.abs(roomData.target - roomData.hostAnswer);
+            let guestDiff = Math.abs(roomData.target - roomData.guestAnswer);
+            let title = "";
+
+            if (hostDiff < guestDiff) {
+                title = myRole === 'host' ? "👑 คุณชนะ!" : "❌ คุณแพ้!";
+            } else if (guestDiff < hostDiff) {
+                title = myRole === 'guest' ? "👑 คุณชนะ!" : "❌ คุณแพ้!";
+            } else {
+                title = "🤝 ผลการแข่งขัน: เสมอ!";
+            }
+
+            document.getElementById('result-text').innerText = title;
+            document.getElementById('result-details').innerHTML =
+                `🎯 เป้าหมายรอบนี้: <b>${roomData.target}</b><br><br>` +
+                `🔵 ผู้สร้างห้องทำได้: <b>${roomData.hostAnswer}</b> (ห่าง ${hostDiff})<br>` +
+                `🔴 ผู้ร่วมห้องทำได้: <b>${roomData.guestAnswer}</b> (ห่าง ${guestDiff})<br><br>` +
+                `<i>*กฎเกม: ใครคำนวณได้แต้มใกล้เป้าหมายที่สุด เป็นฝ่ายชนะ!</i>`;
+            changeScreen('screen-result');
+
+            if (myRole === 'host') {
+                db.ref('rooms/' + roomCode).update({
+                    hostAnswer: -999,
+                    guestAnswer: -999,
+                    status: 'ready'
+                });
+            }
+        }
+
+        function leaveRoom() {
+            if (roomCode) {
+                db.ref('rooms/' + roomCode).off('value');
+                if (myRole === 'host') {
+                    db.ref('rooms/' + roomCode).remove();
+                } else {
+                    db.ref('rooms/' + roomCode).update({
+                        guestPresent: false,
+                        status: 'waiting'
+                    });
+                }
+            }
+            changeScreen('screen-mode');
+        }
+    </script>
+
+</body>
+</html>
