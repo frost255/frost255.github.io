@@ -145,6 +145,43 @@
             background: #666;
         }
 
+        .history-panel {
+            margin-top: 24px;
+            text-align: left;
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .history-panel h3 {
+            margin: 0 0 12px;
+            font-size: 18px;
+            text-align: center;
+            color: #ffcc00;
+        }
+
+        .history-item {
+            background: #333;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-item .outcome-win { color: #2ecc71; }
+        .history-item .outcome-lose { color: #e74c3c; }
+        .history-item .outcome-draw { color: #f39c12; }
+        .history-item .outcome-neutral { color: #aaa; }
+
+        #result-actions {
+            margin-top: 16px;
+        }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -175,6 +212,10 @@
             Normal: สุ่ม 4 ตัว | + − × ÷ ^ | 60 วิ<br>
             Advanced: สุ่ม 5 ตัว | + − × ÷ ^ √ ! | 100 วิ
         </p>
+        <div class="history-panel">
+            <h3>📋 ประวัติ 5 เกมล่าสุด</h3>
+            <div id="history-list"></div>
+        </div>
     </div>
 
     <!-- หน้า 2: เลือกเล่นคนเดียว / 1v1 -->
@@ -243,7 +284,10 @@
         <h2>🏆 ผลการแข่งขัน</h2>
         <h1 id="result-text" style="color:#ffcc00;"></h1>
         <div id="result-details" style="font-size:17px; line-height:1.7; margin:20px 0;"></div>
-        <button onclick="backToMenu()">กลับหน้าหลัก</button>
+        <div id="result-actions">
+            <button id="rematch-btn" style="display:none;" onclick="rematch1v1()">🔁 เล่นอีกรอบ</button>
+            <button onclick="backToMenu()">กลับหน้าหลัก</button>
+        </div>
     </div>
 
     <script>
@@ -321,6 +365,90 @@
         let answered = false;
         let myResult = null; // ค่าที่คำนวณได้
         let countdownRunning = false;
+        let resultShown = false;
+
+        const HISTORY_KEY = 'speedMathHistory';
+
+        function saveGameHistory(entry) {
+            try {
+                let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+                history.unshift({
+                    ...entry,
+                    date: new Date().toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
+                });
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 5)));
+                renderHistory();
+            } catch (e) {
+                console.error('save history failed', e);
+            }
+        }
+
+        function renderHistory() {
+            const el = document.getElementById('history-list');
+            if (!el) return;
+
+            let history = [];
+            try {
+                history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            } catch (e) {
+                history = [];
+            }
+
+            if (history.length === 0) {
+                el.innerHTML = '<p style="color:#666;font-size:14px;text-align:center;">ยังไม่มีประวัติ</p>';
+                return;
+            }
+
+            el.innerHTML = history.map(h => {
+                const outcomeClass =
+                    h.outcome === 'win' || h.outcome === 'perfect' ? 'outcome-win' :
+                    h.outcome === 'lose' || h.outcome === 'surrender' ? 'outcome-lose' :
+                    h.outcome === 'draw' ? 'outcome-draw' : 'outcome-neutral';
+
+                const typeLabel = h.type === '1v1' ? '1v1' : 'เดี่ยว';
+                const modeLabel = h.mode === 'advanced' ? 'Advanced' : 'Normal';
+                const outcomeLabel = {
+                    win: 'ชนะ', lose: 'แพ้', draw: 'เสมอ', perfect: 'Perfect!',
+                    timeout: 'หมดเวลา', surrender: 'ยอมแพ้', done: 'จบเกม'
+                }[h.outcome] || h.outcome;
+
+                return `<div class="history-item">
+                    <div><b class="${outcomeClass}">${outcomeLabel}</b> · ${typeLabel} · ${modeLabel} · ${h.date}</div>
+                    <div>เป้า <b>${h.target}</b> | ตัวเลข [${h.numbers}]</div>
+                    ${h.myExpr ? `<div>คุณ: ${h.myExpr} → ${h.myValue ?? '—'} (ห่าง ${h.myDiff ?? '—'})</div>` : ''}
+                    ${h.note ? `<div style="color:#aaa;">${h.note}</div>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function updateResultActions() {
+            const rematchBtn = document.getElementById('rematch-btn');
+            if (!rematchBtn) return;
+
+            const canRematch = isMultiplayer && roomCode && db && myRole;
+            rematchBtn.style.display = canRematch ? 'inline-block' : 'none';
+            rematchBtn.textContent = myRole === 'host'
+                ? '🔁 เล่นอีกรอบ'
+                : '🔁 กลับห้อง (รอ Host เริ่ม)';
+        }
+
+        function rematch1v1() {
+            if (!roomCode || !db) return;
+
+            resultShown = false;
+            countdownRunning = false;
+            answered = false;
+
+            if (myRole === 'host') {
+                hostTriggerStart();
+            } else {
+                document.getElementById('display-room-code').innerText = roomCode;
+                document.getElementById('lobby-status').innerText = 'รอเจ้าของห้องเริ่มรอบใหม่...';
+                document.getElementById('start-game-btn').style.display = 'none';
+                changeScreen('screen-lobby');
+                listenToRoom();
+            }
+        }
 
         function changeScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -448,6 +576,8 @@
         }
 
         function listenToRoom() {
+            if (!db || !roomCode) return;
+            db.ref('rooms/' + roomCode).off('value');
             db.ref('rooms/' + roomCode).on('value', snap => {
                 if (!snap.exists()) return;
                 const data = snap.val();
@@ -468,18 +598,21 @@
 
                 if (data.status === 'playing') {
                     const oppDone = myRole === 'host' ? data.guestAnswer !== -999 : data.hostAnswer !== -999;
-                    document.getElementById('opponent-status').innerText = oppDone ? '🟢 ส่งแล้ว' : '⏳ กำลังคิด...';
+                    if (document.getElementById('opponent-status')) {
+                        document.getElementById('opponent-status').innerText = oppDone ? '🟢 ส่งแล้ว' : '⏳ กำลังคิด...';
+                    }
                     const bothDone = data.hostAnswer !== -999 && data.guestAnswer !== -999;
-                    if (bothDone) evaluateWinner(data);
+                    if (bothDone && !resultShown) evaluateWinner(data);
                 }
 
-                if (data.status === 'surrendered' && data.surrenderedBy && data.surrenderedBy !== myRole) {
+                if (data.status === 'surrendered' && data.surrenderedBy && data.surrenderedBy !== myRole && !resultShown) {
                     showOpponentSurrender(data.surrenderedBy);
                 }
             });
         }
 
         function hostTriggerStart() {
+            resultShown = false;
             const s = getGameSettings();
             const nums = generateNumbers(s.count);
             const tgt = generateTarget(s.minTarget, s.maxTarget);
@@ -531,6 +664,7 @@
             countdownRunning = false;
             clearInterval(gameTimer);
             changeScreen('screen-mode');
+            renderHistory();
         }
 
         function surrender() {
@@ -556,8 +690,20 @@
                 db.ref('rooms/' + roomCode).update(update)
                     .catch(err => console.error(err))
                     .finally(() => {
+                        saveGameHistory({
+                            mode: currentMode,
+                            type: '1v1',
+                            outcome: 'surrender',
+                            target: target,
+                            numbers: numbers.join(', '),
+                            myExpr: '(ยอมแพ้)',
+                            myValue: null,
+                            myDiff: null,
+                            note: 'คุณยอมแพ้กลางเกม'
+                        });
                         document.getElementById('result-text').innerText = '🏳️ คุณยอมแพ้';
                         document.getElementById('result-details').innerHTML = 'กลับหน้าเมนูเพื่อเล่นใหม่';
+                        updateResultActions();
                         changeScreen('screen-result');
                         roomCode = '';
                         myRole = '';
@@ -569,17 +715,47 @@
         }
 
         function showOpponentSurrender(who) {
+            resultShown = true;
             db.ref('rooms/' + roomCode).off('value');
             clearInterval(gameTimer);
             const label = who === 'host' ? 'เจ้าของห้อง' : 'ผู้เข้าร่วม';
+
+            saveGameHistory({
+                mode: currentMode,
+                type: '1v1',
+                outcome: 'win',
+                target: target,
+                numbers: numbers.join(', '),
+                myExpr: document.getElementById('answer').value || '—',
+                myValue: myResult,
+                myDiff: myResult !== null ? Math.abs(target - myResult) : null,
+                note: label + ' ยอมแพ้ — คุณชนะ'
+            });
+
             document.getElementById('result-text').innerText = '🎉 คุณชนะ! (คู่ต่อสู้ยอมแพ้)';
             document.getElementById('result-details').innerHTML = label + ' ยอมแพ้กลางเกม';
+
+            if (db && roomCode) {
+                db.ref('rooms/' + roomCode).update({
+                    status: 'ready',
+                    surrenderedBy: '',
+                    hostAnswer: -999,
+                    guestAnswer: -999,
+                    hostExpr: '',
+                    guestExpr: ''
+                }).finally(() => listenToRoom());
+            }
+            updateResultActions();
             changeScreen('screen-result');
         }
 
         function backToMenu() {
             if (isMultiplayer && roomCode) leaveRoom();
-            else changeScreen('screen-mode');
+            else {
+                resultShown = false;
+                changeScreen('screen-mode');
+            }
+            renderHistory();
         }
 
         // ── Game Core (เกมคณิตคิดเร็วเดิม) ──
@@ -737,13 +913,17 @@
         }
 
         function showSingleResult(expr, value, timedOut) {
+            resultShown = true;
             let title, details;
+            let outcome = 'done';
 
             if (value === null || timedOut) {
                 title = '⏰ หมดเวลา!';
                 details = `เป้าหมาย: <b>${target}</b><br>ไม่ได้ส่งคำตอบที่ถูกต้อง`;
+                outcome = 'timeout';
             } else {
                 const diff = Math.abs(target - value);
+                outcome = diff === 0 ? 'perfect' : 'done';
                 title = diff === 0 ? '🎯 PERFECT! ตรงเป้า!' : '🎉 จบรอบ!';
                 details =
                     `สมการ: <b>${expr}</b><br>` +
@@ -752,12 +932,25 @@
                     `ห่างจากเป้า: <b>${diff}</b> แต้ม`;
             }
 
+            saveGameHistory({
+                mode: currentMode,
+                type: 'single',
+                outcome: outcome,
+                target: target,
+                numbers: numbers.join(', '),
+                myExpr: expr || '—',
+                myValue: value,
+                myDiff: value !== null ? Math.abs(target - value) : null
+            });
+
             document.getElementById('result-text').innerText = title;
             document.getElementById('result-details').innerHTML = details;
+            updateResultActions();
             changeScreen('screen-result');
         }
 
         function evaluateWinner(data) {
+            resultShown = true;
             db.ref('rooms/' + roomCode).off('value');
 
             const hostVal = data.hostAnswer;
@@ -766,13 +959,33 @@
             const guestDiff = guestVal === -999999 ? Infinity : Math.abs(data.target - guestVal);
 
             let title;
+            let outcome;
             if (hostDiff < guestDiff) {
                 title = myRole === 'host' ? '👑 คุณชนะ!' : '❌ คุณแพ้';
+                outcome = myRole === 'host' ? 'win' : 'lose';
             } else if (guestDiff < hostDiff) {
                 title = myRole === 'guest' ? '👑 คุณชนะ!' : '❌ คุณแพ้';
+                outcome = myRole === 'guest' ? 'win' : 'lose';
             } else {
                 title = '🤝 เสมอ!';
+                outcome = 'draw';
             }
+
+            const myVal = myRole === 'host' ? hostVal : guestVal;
+            const myDiff = myRole === 'host' ? hostDiff : guestDiff;
+            const myExpr = myRole === 'host' ? data.hostExpr : data.guestExpr;
+
+            saveGameHistory({
+                mode: currentMode,
+                type: '1v1',
+                outcome: outcome,
+                target: data.target,
+                numbers: data.numbers,
+                myExpr: myExpr || '—',
+                myValue: myVal === -999999 ? null : myVal,
+                myDiff: myDiff === Infinity ? null : myDiff,
+                note: `ห้อง ${roomCode}`
+            });
 
             document.getElementById('result-text').innerText = title;
             document.getElementById('result-details').innerHTML =
@@ -781,6 +994,7 @@
                 `🔴 ผู้เข้าร่วม: <b>${data.guestExpr || '—'}</b> → ${guestVal === -999999 ? 'ไม่ส่ง' : guestVal} (ห่าง ${guestDiff === Infinity ? '—' : guestDiff})<br><br>` +
                 `<i>ใครได้ผลลัพธ์ใกล้เป้าหมายที่สุด ชนะ!</i>`;
 
+            updateResultActions();
             changeScreen('screen-result');
 
             if (myRole === 'host') {
@@ -789,10 +1003,15 @@
                     guestAnswer: -999,
                     hostExpr: '',
                     guestExpr: '',
-                    status: 'ready'
-                });
+                    status: 'ready',
+                    surrenderedBy: ''
+                }).finally(() => listenToRoom());
+            } else {
+                listenToRoom();
             }
         }
+
+        renderHistory();
     </script>
 
 </body>
