@@ -339,9 +339,9 @@
             let msg = 'เกิดข้อผิดพลาด: ' + (err.message || err.code || err);
 
             if (err.code === 'PERMISSION_DENIED') {
-                msg = 'Firebase ปฏิเสธการเขียน — ไปที่ Firebase Console → Realtime Database → Rules แล้วตั้งให้อ่าน/เขียน rooms ได้';
+                msg = 'Firebase ปฏิเสธการเขียน — ไปที่ Firebase Console → Realtime Database → Rules แล้วตั้งให้อ่าน/เขียนได้';
             } else if (location.protocol === 'file:') {
-                msg = 'เปิดไฟล์จากเครื่อง (file://) อาจทำให้ Firebase ใช้ไม่ได้ — ลองเปิดผ่าน Live Server หรืออัปโหลดขึ้น Hosting';
+                msg = 'เปิดไฟล์จากเครื่อง (file://) อาจทำให้ Firebase ใช้ไม่ได้ — ลองเปิดผ่าน Live Server';
             }
 
             document.getElementById('room-setup-msg').textContent = '❌ ' + msg;
@@ -735,18 +735,22 @@
             document.getElementById('result-text').innerText = '🎉 คุณชนะ! (คู่ต่อสู้ยอมแพ้)';
             document.getElementById('result-details').innerHTML = label + ' ยอมแพ้กลางเกม';
 
-            if (db && roomCode) {
-                db.ref('rooms/' + roomCode).update({
-                    status: 'ready',
-                    surrenderedBy: '',
-                    hostAnswer: -999,
-                    guestAnswer: -999,
-                    hostExpr: '',
-                    guestExpr: ''
-                }).finally(() => listenToRoom());
-            }
             updateResultActions();
             changeScreen('screen-result');
+            
+            // ให้ผู้เล่นที่ยอมแพ้เห็นผลด้วยก่อนที่จะรีเซ็ต
+            setTimeout(() => {
+                if (db && roomCode) {
+                    db.ref('rooms/' + roomCode).update({
+                        status: 'ready',
+                        surrenderedBy: '',
+                        hostAnswer: -999,
+                        guestAnswer: -999,
+                        hostExpr: '',
+                        guestExpr: ''
+                    }).finally(() => listenToRoom());
+                }
+            }, 2000);
         }
 
         function backToMenu() {
@@ -997,22 +1001,23 @@
             updateResultActions();
             changeScreen('screen-result');
 
-            if (myRole === 'host') {
-                db.ref('rooms/' + roomCode).update({
-                    hostAnswer: -999,
-                    guestAnswer: -999,
-                    hostExpr: '',
-                    guestExpr: '',
-                    status: 'ready',
-                    surrenderedBy: ''
-                }).finally(() => listenToRoom());
-            } else {
-                listenToRoom();
-            }
+            // ล่าช้าการรีเซ็ต 2 วินาที เพื่อให้ผู้เล่นทั้งคู่เห็นผลลัพธ์ก่อน
+            setTimeout(() => {
+                if (myRole === 'host') {
+                    if (db && roomCode) {
+                        db.ref('rooms/' + roomCode).update({
+                            status: 'ready',
+                            hostAnswer: -999,
+                            guestAnswer: -999,
+                            hostExpr: '',
+                            guestExpr: ''
+                        }).finally(() => listenToRoom());
+                    }
+                }
+            }, 2000);
         }
 
         renderHistory();
     </script>
-
 </body>
 </html>
