@@ -719,7 +719,6 @@
 
         function showOpponentSurrender(who) {
             resultShown = true;
-            db.ref('rooms/' + roomCode).off('value');
             clearInterval(gameTimer);
             const label = who === 'host' ? 'เจ้าของห้อง' : 'ผู้เข้าร่วม';
 
@@ -743,7 +742,7 @@
             
             // ล่าช้าเพื่อให้ผู้เล่นเห็นผล
             setTimeout(() => {
-                if (db && roomCode) {
+                if (db && roomCode && myRole === 'host') {
                     db.ref('rooms/' + roomCode).update({
                         status: 'ready',
                         surrenderedBy: '',
@@ -758,7 +757,6 @@
 
         function showResultScreen(data) {
             // ปิด listener ทันที
-            db.ref('rooms/' + roomCode).off('value');
             clearInterval(gameTimer);
 
             const hostVal = data.hostAnswer;
