@@ -602,7 +602,10 @@
                         document.getElementById('opponent-status').innerText = oppDone ? '🟢 ส่งแล้ว' : '⏳ กำลังคิด...';
                     }
                     const bothDone = data.hostAnswer !== -999 && data.guestAnswer !== -999;
-                    if (bothDone && !resultShown) evaluateWinner(data);
+                    if (bothDone && !resultShown) {
+                        resultShown = true;
+                        showResultScreen(data);
+                    }
                 }
 
                 if (data.status === 'surrendered' && data.surrenderedBy && data.surrenderedBy !== myRole && !resultShown) {
@@ -738,12 +741,75 @@
             updateResultActions();
             changeScreen('screen-result');
             
-            // ให้ผู้เล่นที่ยอมแพ้เห็นผลด้วยก่อนที่จะรีเซ็ต
+            // ล่าช้าเพื่อให้ผู้เล่นเห็นผล
             setTimeout(() => {
                 if (db && roomCode) {
                     db.ref('rooms/' + roomCode).update({
                         status: 'ready',
                         surrenderedBy: '',
+                        hostAnswer: -999,
+                        guestAnswer: -999,
+                        hostExpr: '',
+                        guestExpr: ''
+                    }).finally(() => listenToRoom());
+                }
+            }, 2000);
+        }
+
+        function showResultScreen(data) {
+            // ปิด listener ทันที
+            db.ref('rooms/' + roomCode).off('value');
+            clearInterval(gameTimer);
+
+            const hostVal = data.hostAnswer;
+            const guestVal = data.guestAnswer;
+            const hostDiff = hostVal === -999999 ? Infinity : Math.abs(data.target - hostVal);
+            const guestDiff = guestVal === -999999 ? Infinity : Math.abs(data.target - guestVal);
+
+            let title;
+            let outcome;
+            if (hostDiff < guestDiff) {
+                title = myRole === 'host' ? '👑 คุณชนะ!' : '❌ คุณแพ้';
+                outcome = myRole === 'host' ? 'win' : 'lose';
+            } else if (guestDiff < hostDiff) {
+                title = myRole === 'guest' ? '👑 คุณชนะ!' : '❌ คุณแพ้';
+                outcome = myRole === 'guest' ? 'win' : 'lose';
+            } else {
+                title = '🤝 เสมอ!';
+                outcome = 'draw';
+            }
+
+            const myVal = myRole === 'host' ? hostVal : guestVal;
+            const myDiff = myRole === 'host' ? hostDiff : guestDiff;
+            const myExpr = myRole === 'host' ? data.hostExpr : data.guestExpr;
+
+            saveGameHistory({
+                mode: currentMode,
+                type: '1v1',
+                outcome: outcome,
+                target: data.target,
+                numbers: data.numbers,
+                myExpr: myExpr || '—',
+                myValue: myVal === -999999 ? null : myVal,
+                myDiff: myDiff === Infinity ? null : myDiff,
+                note: `ห้อง ${roomCode}`
+            });
+
+            document.getElementById('result-text').innerText = title;
+            document.getElementById('result-details').innerHTML =
+                `🎯 เป้าหมาย: <b>${data.target}</b> | ตัวเลข: <b>${data.numbers}</b><br><br>` +
+                `🔵 เจ้าของห้อง: <b>${data.hostExpr || '—'}</b> → ${hostVal === -999999 ? 'ไม่ส่ง' : hostVal} (ห่าง ${hostDiff === Infinity ? '—' : hostDiff})<br>` +
+                `🔴 ผู้เข้าร่วม: <b>${data.guestExpr || '—'}</b> → ${guestVal === -999999 ? 'ไม่ส่ง' : guestVal} (ห่าง ${guestDiff === Infinity ? '—' : guestDiff})<br><br>` +
+                `<i>ใครได้ผลลัพธ์ใกล้เป้าหมายที่สุด ชนะ!</i>`;
+
+            updateResultActions();
+            changeScreen('screen-result');
+
+            // รีเซ็ตหลังจาก 2 วินาที
+            setTimeout(() => {
+                if (db && roomCode) {
+                    db.ref('rooms/' + roomCode).update({
+                        status: 'ready',
                         hostAnswer: -999,
                         guestAnswer: -999,
                         hostExpr: '',
@@ -951,69 +1017,6 @@
             document.getElementById('result-details').innerHTML = details;
             updateResultActions();
             changeScreen('screen-result');
-        }
-
-        function evaluateWinner(data) {
-            resultShown = true;
-            // ไม่ปิด listener ตรงนี้ เพื่อให้ทั้ง host และ guest เห็นผลลัพธ์พร้อมกัน
-
-            const hostVal = data.hostAnswer;
-            const guestVal = data.guestAnswer;
-            const hostDiff = hostVal === -999999 ? Infinity : Math.abs(data.target - hostVal);
-            const guestDiff = guestVal === -999999 ? Infinity : Math.abs(data.target - guestVal);
-
-            let title;
-            let outcome;
-            if (hostDiff < guestDiff) {
-                title = myRole === 'host' ? '👑 คุณชนะ!' : '❌ คุณแพ้';
-                outcome = myRole === 'host' ? 'win' : 'lose';
-            } else if (guestDiff < hostDiff) {
-                title = myRole === 'guest' ? '👑 คุณชนะ!' : '❌ คุณแพ้';
-                outcome = myRole === 'guest' ? 'win' : 'lose';
-            } else {
-                title = '🤝 เสมอ!';
-                outcome = 'draw';
-            }
-
-            const myVal = myRole === 'host' ? hostVal : guestVal;
-            const myDiff = myRole === 'host' ? hostDiff : guestDiff;
-            const myExpr = myRole === 'host' ? data.hostExpr : data.guestExpr;
-
-            saveGameHistory({
-                mode: currentMode,
-                type: '1v1',
-                outcome: outcome,
-                target: data.target,
-                numbers: data.numbers,
-                myExpr: myExpr || '—',
-                myValue: myVal === -999999 ? null : myVal,
-                myDiff: myDiff === Infinity ? null : myDiff,
-                note: `ห้อง ${roomCode}`
-            });
-
-            document.getElementById('result-text').innerText = title;
-            document.getElementById('result-details').innerHTML =
-                `🎯 เป้าหมาย: <b>${data.target}</b> | ตัวเลข: <b>${data.numbers}</b><br><br>` +
-                `🔵 เจ้าของห้อง: <b>${data.hostExpr || '—'}</b> → ${hostVal === -999999 ? 'ไม่ส่ง' : hostVal} (ห่าง ${hostDiff === Infinity ? '—' : hostDiff})<br>` +
-                `🔴 ผู้เข้าร่วม: <b>${data.guestExpr || '—'}</b> → ${guestVal === -999999 ? 'ไม่ส่ง' : guestVal} (ห่าง ${guestDiff === Infinity ? '—' : guestDiff})<br><br>` +
-                `<i>ใครได้ผลลัพธ์ใกล้เป้าหมายที่สุด ชนะ!</i>`;
-
-            updateResultActions();
-            changeScreen('screen-result');
-
-            // ล่าช้าการรีเซ็ต 2 วินาที เพื่อให้ผู้เล่นทั้งคู่เห็นผลลัพธ์ก่อน
-            setTimeout(() => {
-                if (db && roomCode) {
-                    db.ref('rooms/' + roomCode).off('value');
-                    db.ref('rooms/' + roomCode).update({
-                        status: 'ready',
-                        hostAnswer: -999,
-                        guestAnswer: -999,
-                        hostExpr: '',
-                        guestExpr: ''
-                    }).finally(() => listenToRoom());
-                }
-            }, 2000);
         }
 
         renderHistory();
