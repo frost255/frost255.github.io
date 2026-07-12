@@ -955,7 +955,7 @@
 
         function evaluateWinner(data) {
             resultShown = true;
-            db.ref('rooms/' + roomCode).off('value');
+            // ไม่ปิด listener ตรงนี้ เพื่อให้ทั้ง host และ guest เห็นผลลัพธ์พร้อมกัน
 
             const hostVal = data.hostAnswer;
             const guestVal = data.guestAnswer;
@@ -1003,16 +1003,15 @@
 
             // ล่าช้าการรีเซ็ต 2 วินาที เพื่อให้ผู้เล่นทั้งคู่เห็นผลลัพธ์ก่อน
             setTimeout(() => {
-                if (myRole === 'host') {
-                    if (db && roomCode) {
-                        db.ref('rooms/' + roomCode).update({
-                            status: 'ready',
-                            hostAnswer: -999,
-                            guestAnswer: -999,
-                            hostExpr: '',
-                            guestExpr: ''
-                        }).finally(() => listenToRoom());
-                    }
+                if (db && roomCode) {
+                    db.ref('rooms/' + roomCode).off('value');
+                    db.ref('rooms/' + roomCode).update({
+                        status: 'ready',
+                        hostAnswer: -999,
+                        guestAnswer: -999,
+                        hostExpr: '',
+                        guestExpr: ''
+                    }).finally(() => listenToRoom());
                 }
             }, 2000);
         }
