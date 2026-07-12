@@ -998,74 +998,95 @@
                 return;
             }
 
-            let value = null;
-            if (rawInput) {
+            let result = -999;
+            let resultMsg = '';
+
+            if (!timedOut && rawInput) {
                 try {
-                    value = evaluateExpression(rawInput);
+                    result = evaluateExpression(rawInput);
+                    if (isNaN(result)) throw new Error('ผลลัพธ์ไม่ถูกต้อง');
+                    const diff = Math.abs(target - result);
+                    resultMsg = `✅ ${result} (ห่าง ${diff})`;
                 } catch (e) {
-                    msg.textContent = timedOut ? '' : ('❌ ' + (e.message || 'สมการไม่ถูกต้อง'));
-                    if (!timedOut) return;
+                    resultMsg = '❌ สมการผิด: ' + e.message;
+                    result = -999;
                 }
+            } else if (timedOut) {
+                resultMsg = '⏰ หมดเวลา!';
+                result = -999;
             }
 
-            answered = true;
-            clearInterval(gameTimer);
-            document.getElementById('submit-btn').disabled = true;
-            document.getElementById('my-status').innerText = timedOut && value === null ? '⏰ หมดเวลา' : '🟢 ส่งแล้ว';
-            myResult = value;
+            myResult = result !== -999 ? result : null;
 
             if (!isMultiplayer) {
-                showSingleResult(rawInput, value, timedOut);
-            } else {
-                const update = {};
-                if (myRole === 'host') {
-                    update.hostAnswer = value === null ? -999999 : value;
-                    update.hostExpr = rawInput;
+                document.getElementById('submit-btn').disabled = true;
+                msg.textContent = resultMsg;
+                answered = true;
+                clearInterval(gameTimer);
+
+                if (result === target) {
+                    saveGameHistory({
+                        mode: currentMode,
+                        type: 'เดี่ยว',
+                        outcome: 'perfect',
+                        target: target,
+                        numbers: numbers.join(', '),
+                        myExpr: rawInput || '—',
+                        myValue: result,
+                        myDiff: 0
+                    });
+                    document.getElementById('result-text').innerText = '🎉 Perfect!';
+                    document.getElementById('result-details').innerHTML = `เป้า: <b>${target}</b> | สมการ: <b>${rawInput}</b>`;
+                } else if (result === -999) {
+                    saveGameHistory({
+                        mode: currentMode,
+                        type: 'เดี่ยว',
+                        outcome: timedOut ? 'timeout' : 'done',
+                        target: target,
+                        numbers: numbers.join(', '),
+                        myExpr: rawInput || '—',
+                        myValue: null,
+                        myDiff: null,
+                        note: timedOut ? 'หมดเวลา' : 'ไม่ได้เสร็จ'
+                    });
+                    document.getElementById('result-text').innerText = '📊 ผลลัพธ์';
+                    document.getElementById('result-details').innerHTML = `เป้า: <b>${target}</b> | สมการ: <b>${rawInput || 'ไม่มี'}</b><br><br><b>${resultMsg}</b>`;
                 } else {
-                    update.guestAnswer = value === null ? -999999 : value;
-                    update.guestExpr = rawInput;
+                    const diff = Math.abs(target - result);
+                    saveGameHistory({
+                        mode: currentMode,
+                        type: 'เดี่ยว',
+                        outcome: 'done',
+                        target: target,
+                        numbers: numbers.join(', '),
+                        myExpr: rawInput,
+                        myValue: result,
+                        myDiff: diff
+                    });
+                    document.getElementById('result-text').innerText = '📊 ผลลัพธ์';
+                    document.getElementById('result-details').innerHTML = `เป้า: <b>${target}</b> | ผลลัพธ์: <b>${result}</b> | ห่าง: <b>${diff}</b><br><br>สมการ: <b>${rawInput}</b>`;
                 }
-                db.ref('rooms/' + roomCode).update(update);
-            }
-        }
 
-        function showSingleResult(expr, value, timedOut) {
-            resultShown = true;
-            let title, details;
-            let outcome = 'done';
-
-            if (value === null || timedOut) {
-                title = '⏰ หมดเวลา!';
-                details = `เป้าหมาย: <b>${target}</b><br>ไม่ได้ส่งคำตอบที่ถูกต้อง`;
-                outcome = 'timeout';
+                changeScreen('screen-result');
             } else {
-                const diff = Math.abs(target - value);
-                outcome = diff === 0 ? 'perfect' : 'done';
-                title = diff === 0 ? '🎯 PERFECT! ตรงเป้า!' : '🎉 จบรอบ!';
-                details =
-                    `สมการ: <b>${expr}</b><br>` +
-                    `ผลลัพธ์: <b>${value}</b><br>` +
-                    `เป้าหมาย: <b>${target}</b><br>` +
-                    `ห่างจากเป้า: <b>${diff}</b> แต้ม`;
+                // Multiplayer
+                answered = true;
+                document.getElementById('submit-btn').disabled = true;
+                msg.textContent = resultMsg;
+                document.getElementById('my-status').innerText = '🟢 ส่งแล้ว';
+
+                const update = {
+                    [myRole === 'host' ? 'hostAnswer' : 'guestAnswer']: result,
+                    [myRole === 'host' ? 'hostExpr' : 'guestExpr']: rawInput || ''
+                };
+
+                db.ref('rooms/' + roomCode).update(update).catch(err => console.error(err));
             }
-
-            saveGameHistory({
-                mode: currentMode,
-                type: 'single',
-                outcome: outcome,
-                target: target,
-                numbers: numbers.join(', '),
-                myExpr: expr || '—',
-                myValue: value,
-                myDiff: value !== null ? Math.abs(target - value) : null
-            });
-
-            document.getElementById('result-text').innerText = title;
-            document.getElementById('result-details').innerHTML = details;
-            changeScreen('screen-result');
         }
 
+        // Init
         renderHistory();
     </script>
+
 </body>
 </html>
