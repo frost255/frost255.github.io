@@ -648,10 +648,7 @@
         }
 
         function hostTriggerStart() {
-            if (!guestReadyForRematch) {
-                alert("รอลูกห้องกดเล่นอีกรอบก่อน");
-                return;
-            }
+            
             resultShown = false;
             const s = getGameSettings();
             const nums = generateNumbers(s.count);
