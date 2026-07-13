@@ -267,7 +267,7 @@
         <div id="lobby-result-panel" class="lobby-result" style="display:none;">
             <h4 id="lobby-result-title">🏆 ผลการแข่งขัน</h4>
             <div id="lobby-result-content"></div>
-            <button onclick="rematch1v1()" style="display:block; margin-top:12px; width:100%;">🔁 เล่นอีกรอบ</button>
+            <button id="guest-rematch-btn" onclick="rematch1v1()" style="display:block; margin-top:12px; width:100%;">🔁 เล่นอีกรอบ</button>
         </div>
         <br>
         <button onclick="leaveRoom()">ออกจากห้อง</button>
@@ -309,7 +309,7 @@
         <h1 id="result-text" style="color:#ffcc00;"></h1>
         <div id="result-details" style="font-size:17px; line-height:1.7; margin:20px 0;"></div>
         <div id="result-actions">
-            <button id="rematch-btn" style="display:none;" onclick="rematch1v1()">🔁 เล่นอีกรอบ</button>
+            <button id="rematch-btn" style="display:none;" onclick="rematch1v1()" disabled>🔁 เล่นอีกรอบ (รอลูกห้อง...)</button>
             <button onclick="backToMenu()">กลับหน้าหลัก</button>
         </div>
     </div>
@@ -390,6 +390,7 @@
         let myResult = null;
         let countdownRunning = false;
         let resultShown = false;
+        let guestClickedRematch = false;  // ✅ ตัวแปรใหม่ เพื่อติดตามว่า guest กดปุ่มแล้วหรือยัง
 
         const HISTORY_KEY = 'speedMathHistory';
 
@@ -452,19 +453,21 @@
             countdownRunning = false;
             answered = false;
 
-            // ซ่อน result panel ใน lobby ถ้า guest
             if (myRole === 'guest') {
-                document.getElementById('lobby-result-panel').style.display = 'none';
-            }
-
-            if (myRole === 'host') {
-                hostTriggerStart();
-            } else {
-                document.getElementById('display-room-code').innerText = roomCode;
+                // ✅ ลูกห้องกดปุ่ม → บอก host ว่า guest พร้อมแล้ว
+                guestClickedRematch = true;
+                db.ref('rooms/' + roomCode).update({ guestReadyForRematch: true })
+                    .catch(err => console.error('Failed to update guestReadyForRematch:', err));
+                
+                // ซ่อนปุ่มลูกห้องหลังกด
+                document.getElementById('guest-rematch-btn').disabled = true;
+                document.getElementById('guest-rematch-btn').textContent = '⏳ รอเจ้าของห้องเริ่มเกม...';
+                
                 document.getElementById('lobby-status').innerText = 'รอเจ้าของห้องเริ่มรอบใหม่...';
-                document.getElementById('start-game-btn').style.display = 'none';
-                changeScreen('screen-lobby');
                 listenToRoom();
+            } else if (myRole === 'host') {
+                // ✅ หัวห้องกดปุ่ม → อัปเดต guestReadyForRematch เป็น false แล้ว hostTriggerStart
+                hostTriggerStart();
             }
         }
 
@@ -541,7 +544,8 @@
                         guestAnswer: -999,
                         hostExpr: '',
                         guestExpr: '',
-                        surrenderedBy: ''
+                        surrenderedBy: '',
+                        guestReadyForRematch: false  // ✅ เพิ่มฟิลด์นี้
                     });
                 })
                 .then(() => {
@@ -550,6 +554,7 @@
                     document.getElementById('lobby-status').innerText = 'กำลังรอผู้เล่นคนที่ 2...';
                     document.getElementById('start-game-btn').style.display = 'none';
                     document.getElementById('lobby-result-panel').style.display = 'none';
+                    guestClickedRematch = false;
                     changeScreen('screen-lobby');
                     listenToRoom();
                 })
@@ -580,7 +585,7 @@
                     if (data.status !== 'waiting') throw new Error('ห้องนี้เริ่มเกมแล้วหรือเต็มแล้ว');
 
                     currentMode = data.mode;
-                    return db.ref('rooms/' + roomCode).update({ guestPresent: true, status: 'ready' });
+                    return db.ref('rooms/' + roomCode).update({ guestPresent: true, status: 'ready', guestReadyForRematch: false });
                 })
                 .then(() => {
                     document.getElementById('room-setup-msg').textContent = '';
@@ -588,6 +593,7 @@
                     document.getElementById('lobby-status').innerText = 'เชื่อมต่อแล้ว! รอเจ้าของห้องเริ่มเกม...';
                     document.getElementById('start-game-btn').style.display = 'none';
                     document.getElementById('lobby-result-panel').style.display = 'none';
+                    guestClickedRematch = false;
                     changeScreen('screen-lobby');
                     listenToRoom();
                 })
@@ -631,6 +637,13 @@
                 if (data.status === 'surrendered' && data.surrenderedBy && data.surrenderedBy !== myRole && !resultShown) {
                     showOpponentSurrender(data.surrenderedBy);
                 }
+
+                // ✅ ตรวจสอบว่า guest กดปุ่มแล้วหรือยัง
+                if (myRole === 'host' && data.guestReadyForRematch && document.getElementById('rematch-btn')) {
+                    const rematchBtn = document.getElementById('rematch-btn');
+                    rematchBtn.disabled = false;
+                    rematchBtn.textContent = '🔁 เล่นอีกรอบ';
+                }
             });
         }
 
@@ -647,7 +660,8 @@
                 guestAnswer: -999,
                 hostExpr: '',
                 guestExpr: '',
-                surrenderedBy: ''
+                surrenderedBy: '',
+                guestReadyForRematch: false  // ✅ รีเซ็ตค่า
             });
         }
 
@@ -686,6 +700,7 @@
             isHost = false;
             countdownRunning = false;
             resultShown = false;
+            guestClickedRematch = false;
             clearInterval(gameTimer);
             changeScreen('screen-mode');
             renderHistory();
@@ -768,7 +783,8 @@
                         hostAnswer: -999,
                         guestAnswer: -999,
                         hostExpr: '',
-                        guestExpr: ''
+                        guestExpr: '',
+                        guestReadyForRematch: false  // ✅ รีเซ็ต
                     }).finally(() => listenToRoom());
                 }
             }, 2000);
@@ -824,9 +840,11 @@
                 const rematchBtn = document.getElementById('rematch-btn');
                 if (rematchBtn) {
                     rematchBtn.style.display = 'inline-block';
-                    rematchBtn.textContent = '🔁 เล่นอีกรอบ';
+                    rematchBtn.textContent = '🔁 เล่นอีกรอบ (รอลูกห้อง...)';
+                    rematchBtn.disabled = true;  // ✅ ปิดใช้งาน เพราะว่ายังไม่มี guest กดปุ่ม
                 }
 
+                guestClickedRematch = false;
                 changeScreen('screen-result');
             } else {
                 // GUEST → แสดงผลในหน้า lobby
@@ -841,29 +859,19 @@
                     `🔴 คุณ: <b>${data.guestExpr || '—'}</b> → ${guestVal === -999999 ? 'ไม่ส่ง' : guestVal} (ห่าง ${guestDiff === Infinity ? '—' : guestDiff})<br><br>` +
                     `<i>ใครได้ผลลัพธ์ใกล้เป้าหมายที่สุด ชนะ!</i>`;
 
+                const guestRematchBtn = document.getElementById('guest-rematch-btn');
+                if (guestRematchBtn) {
+                    guestRematchBtn.disabled = false;
+                    guestRematchBtn.textContent = '🔁 เล่นอีกรอบ';
+                }
+
                 resultPanel.style.display = 'block';
-                document.getElementById('lobby-status').innerText = 'รอเจ้าของห้องเริ่มรอบใหม่...';
+                document.getElementById('lobby-status').innerText = 'เกมจบแล้ว! กดปุ่มเล่นอีกรอบเพื่อให้เจ้าของห้องเริ่มเกมได้';
+                guestClickedRematch = false;
                 changeScreen('screen-lobby');
             }
 
-            // ===== อัปเดต status หลังจาก 2 วินาที =====
-            setTimeout(() => {
-                if (db && roomCode) {
-                    db.ref('rooms/' + roomCode).update({
-                        status: 'ready',
-                        hostAnswer: -999,
-                        guestAnswer: -999,
-                        hostExpr: '',
-                        guestExpr: ''
-                    }).finally(() => {
-                        if (myRole === 'host') {
-                            listenToRoom();
-                        } else {
-                            // guest ไม่เรียก listenToRoom เพื่อให้เห็นผลนาน ๆ
-                        }
-                    });
-                }
-            }, 2000);
+            // ===== ไม่อัปเดต status ให้ ready ทันที ให้รอว่า guest กดปุ่มก่อน =====
         }
 
         function backToMenu() {
@@ -998,95 +1006,55 @@
                 return;
             }
 
-            let result = -999;
-            let resultMsg = '';
+            answered = true;
+            clearInterval(gameTimer);
 
-            if (!timedOut && rawInput) {
-                try {
-                    result = evaluateExpression(rawInput);
-                    if (isNaN(result)) throw new Error('ผลลัพธ์ไม่ถูกต้อง');
-                    const diff = Math.abs(target - result);
-                    resultMsg = `✅ ${result} (ห่าง ${diff})`;
-                } catch (e) {
-                    resultMsg = '❌ สมการผิด: ' + e.message;
-                    result = -999;
-                }
-            } else if (timedOut) {
-                resultMsg = '⏰ หมดเวลา!';
-                result = -999;
+            try {
+                myResult = evaluateExpression(rawInput);
+            } catch (e) {
+                msg.textContent = '❌ สมการไม่ถูกต้อง: ' + e.message;
+                answered = false;
+                return;
             }
 
-            myResult = result !== -999 ? result : null;
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('my-status').innerText = '🟢 ส่งแล้ว';
 
-            if (!isMultiplayer) {
-                document.getElementById('submit-btn').disabled = true;
-                msg.textContent = resultMsg;
-                answered = true;
-                clearInterval(gameTimer);
-
-                if (result === target) {
-                    saveGameHistory({
-                        mode: currentMode,
-                        type: 'เดี่ยว',
-                        outcome: 'perfect',
-                        target: target,
-                        numbers: numbers.join(', '),
-                        myExpr: rawInput || '—',
-                        myValue: result,
-                        myDiff: 0
-                    });
-                    document.getElementById('result-text').innerText = '🎉 Perfect!';
-                    document.getElementById('result-details').innerHTML = `เป้า: <b>${target}</b> | สมการ: <b>${rawInput}</b>`;
-                } else if (result === -999) {
-                    saveGameHistory({
-                        mode: currentMode,
-                        type: 'เดี่ยว',
-                        outcome: timedOut ? 'timeout' : 'done',
-                        target: target,
-                        numbers: numbers.join(', '),
-                        myExpr: rawInput || '—',
-                        myValue: null,
-                        myDiff: null,
-                        note: timedOut ? 'หมดเวลา' : 'ไม่ได้เสร็จ'
-                    });
-                    document.getElementById('result-text').innerText = '📊 ผลลัพธ์';
-                    document.getElementById('result-details').innerHTML = `เป้า: <b>${target}</b> | สมการ: <b>${rawInput || 'ไม่มี'}</b><br><br><b>${resultMsg}</b>`;
-                } else {
-                    const diff = Math.abs(target - result);
-                    saveGameHistory({
-                        mode: currentMode,
-                        type: 'เดี่ยว',
-                        outcome: 'done',
-                        target: target,
-                        numbers: numbers.join(', '),
-                        myExpr: rawInput,
-                        myValue: result,
-                        myDiff: diff
-                    });
-                    document.getElementById('result-text').innerText = '📊 ผลลัพธ์';
-                    document.getElementById('result-details').innerHTML = `เป้า: <b>${target}</b> | ผลลัพธ์: <b>${result}</b> | ห่าง: <b>${diff}</b><br><br>สมการ: <b>${rawInput}</b>`;
-                }
-
-                changeScreen('screen-result');
+            if (isMultiplayer) {
+                const field = myRole === 'host' ? 'hostAnswer' : 'guestAnswer';
+                const exprField = myRole === 'host' ? 'hostExpr' : 'guestExpr';
+                const update = {};
+                update[field] = myResult;
+                update[exprField] = rawInput;
+                db.ref('rooms/' + roomCode).update(update)
+                    .catch(err => console.error('Failed to submit answer:', err));
             } else {
-                // Multiplayer
-                answered = true;
-                document.getElementById('submit-btn').disabled = true;
-                msg.textContent = resultMsg;
-                document.getElementById('my-status').innerText = '🟢 ส่งแล้ว';
+                const diff = Math.abs(target - myResult);
+                msg.textContent = `✅ ผลลัพธ์: ${myResult} (ห่าง ${diff})`;
 
-                const update = {
-                    [myRole === 'host' ? 'hostAnswer' : 'guestAnswer']: result,
-                    [myRole === 'host' ? 'hostExpr' : 'guestExpr']: rawInput || ''
-                };
+                saveGameHistory({
+                    mode: currentMode,
+                    type: 'single',
+                    outcome: diff === 0 ? 'perfect' : 'done',
+                    target: target,
+                    numbers: numbers.join(', '),
+                    myExpr: rawInput,
+                    myValue: myResult,
+                    myDiff: diff,
+                    note: diff === 0 ? 'Perfect!' : null
+                });
 
-                db.ref('rooms/' + roomCode).update(update).catch(err => console.error(err));
+                setTimeout(() => {
+                    document.getElementById('result-text').innerText = diff === 0 ? '🎉 Perfect!' : '✅ เสร็จสิ้น';
+                    document.getElementById('result-details').innerHTML =
+                        `🎯 เป้าหมาย: <b>${target}</b> | ตัวเลข: <b>${numbers.join(', ')}</b><br><br>` +
+                        `สมการ: <b>${rawInput}</b><br>` +
+                        `ผลลัพธ์: <b>${myResult}</b><br>` +
+                        `ห่าง: <b>${diff}</b>`;
+                    changeScreen('screen-result');
+                }, 1500);
             }
         }
-
-        // Init
-        renderHistory();
     </script>
-
 </body>
 </html>
