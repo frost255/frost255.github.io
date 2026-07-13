@@ -382,6 +382,8 @@
         let myRole = '';
         let isHost = false;
 
+        let roomStatus = "waiting";
+
         let numbers = [];
         let target = 0;
         let timeLeft = 60;
@@ -607,6 +609,8 @@
             db.ref('rooms/' + roomCode).on('value', snap => {
                 if (!snap.exists()) return;
                 const data = snap.val();
+                
+                roomStatus = data.status;
 
                 if (myRole === 'host') {
                     if (data.status === 'ready') {
@@ -648,6 +652,19 @@
         }
 
         function hostTriggerStart() {
+            if (roomStatus === "playing" || roomStatus === "countdown") {
+    return;
+}
+            if (
+        document.getElementById('lobby-result-panel').style.display === 'block' ||
+        resultShown
+    ) {
+        if (!guestReadyForRematch) {
+            alert("รอลูกห้องกดเล่นอีกรอบก่อน");
+            return;
+        }
+    }
+
             
             resultShown = false;
             const s = getGameSettings();
